@@ -121,5 +121,6 @@ T_{\rm saved}-T_{\rm overhead}\ge0.05T_{\rm full}
 - Routerの学習条件：[02 Router学習](02_ROUTER_TRAINING.md)
 - KVの正確性条件：[03 KV補完](03_KV_CACHE.md)
 - Gateの進行条件：[05 検証ゲート](05_GATES.md)
+- GPU Servingと既存の動的Layer Skippingの比較文献：[先行研究・技術的出典台帳](PRIOR_ART_AND_ATTRIBUTION.md)
 
 [← 03 KV補完](03_KV_CACHE.md)｜[05 検証ゲート →](05_GATES.md)｜[文書ガイド](README.md)
