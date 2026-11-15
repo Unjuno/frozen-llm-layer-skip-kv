@@ -11,6 +11,8 @@
 - [03 KV補完](03_KV_CACHE.md)：保存、復元、GPUメモリ、不変条件。
 - [04 実験評価](04_EVALUATION.md)：アブレーション、H/T/D/C/U、測定条件。
 - [05 検証ゲート](05_GATES.md)：段階移行、現状、未決事項。
+- [06 最適化対象](06_OPTIMIZATION_TARGETS.md)：最適化の優先課題と限界分析（**提案**）。
+- [07 学習方策](07_POLICY_LEARNING_PIPELINE.md)：Router学習・Schedulerとの連携（**提案**）。
 - [設計判断ログ](DECISIONS.md)：仕様変更の理由と影響。
 - [先行研究・技術的出典台帳](PRIOR_ART_AND_ATTRIBUTION.md)：学術出典、参考にした内容、採用状況、差分、外部資産の権利。
 - [研究プロトコル旧URL](RESEARCH_PROTOCOL.md)：**入口としてのみ残す**。詳細は重複させない。
