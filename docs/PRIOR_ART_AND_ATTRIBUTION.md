@@ -51,6 +51,22 @@
 
 新規の出典は、[06 最適化対象](06_OPTIMIZATION_TARGETS.md)と[07 方策学習パイプライン](07_POLICY_LEARNING_PIPELINE.md)の**理論設計の参考**として記録する。これら論文のコード・データ・図表を複製した事実はない。
 
+## 2.2 最終ON位置・正確性の境界に関係する追加文献
+
+| ID | 一次文献 | 参照する点 | 今回の手法との差分・採用状況 |
+|---|---|---|---|
+| **RW-16** | Wang (2026), [RISK-KV: Quality-Aware Selective KV Cache Reconstruction for Distributed LLM Inference](https://arxiv.org/abs/2610.29544), arXiv:**2610.29544** | 欠損KV再構成の対象層・品質悪化リスクを考慮する近接研究 | **RISK-KVは異なる層からの回帰による近似再構成**を扱う。本研究の同一マスクでのKV補完は**保存した正確な層入力からの射影**が前提。アルゴリズム・コードの流用なし。**比較候補** |
+
+### 本研究で導いた簡単な恒等式の扱い
+
+[09 最終ON位置とKV射影](09_LAST_USE_BOUND.md)に記した「同一マスク列で最後に層をONにした位置より後のSkip位置は、この生成要求中にKVが一度も必要とならない」という関係は、**標準Causal Attention・継続なし・正確なProject-Only/Lazyの意味論**に基づく初等的な計数恒等式である。**数学的な新発見と主張しない**。
+
+この恒等式の**研究上の利用**は、「Layer Routerの選択する全マスク系列が、結果的にどれだけのK/V射影を後で必要にするか」という内生的な費用構造を解析するためである。正しい数のKVが必要かという条件と、GPUのGEMM・同期・待機による実効時間は別の量なので、計数恒等式をGPU高速化の証拠として使わない。
+
+[vSkipper（RW-08）](https://arxiv.org/abs/2609.37062)のProject-OnlyはSkip時にK/Vを射影し、Cacheの完全性を保つ参照方式。[AnchorKV（RW-07）](https://arxiv.org/abs/2611.00117)は残差AnchorからのKV再構成と保存再計算のバランス。[AsymCache（RW-14）](https://arxiv.org/abs/2606.02964)はKV Evictionと再計算のGPU費用を最適化する。**AsymCacheのPrefix再計算**と、**保存済み層入力からの直接K/V射影**の費用を同一視しない。
+
+[10 新規性と合理性の監査](10_NOVELTY_AND_RATIONALITY.md)に、既知要素・未検証の共同最適化主張・反例をまとめる。
+
 ## 3. 概念ごとの「どこから・何を」
 
 | 本研究の要素 | 参照元 | 本研究で独自性として**主張しないこと** | 未確定の差分候補 |
