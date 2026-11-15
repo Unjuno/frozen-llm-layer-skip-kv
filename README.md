@@ -37,6 +37,7 @@
 | [05 検証ゲート](docs/05_GATES.md) | **現在地・未決事項・次に進む条件** |
 | [06 最適化対象](docs/06_OPTIMIZATION_TARGETS.md) | **改良余地の絞り込み・理論上の限界と対策（設計案）** |
 | [07 学習パイプライン](docs/07_POLICY_LEARNING_PIPELINE.md) | **全マスク選択・報酬学習・KV負債を考慮する方策（設計案）** |
+| [08 初回KV需要のモデル](docs/08_KV_FIRST_USE_MODEL.md) | **将来需要の確率・時刻・補完バースト・メモリの分離（設計案）** |
 | [判断ログ](docs/DECISIONS.md) | 確定した方針と実装候補を区別して保存 |
 | [先行研究・出典台帳](docs/PRIOR_ART_AND_ATTRIBUTION.md) | 何を参考にし、何を採用候補としたか／本研究との差分 |
 | [運用規約](docs/REPOSITORY_POLICY.md) | `main`での直接更新・公開・記録ルール |
