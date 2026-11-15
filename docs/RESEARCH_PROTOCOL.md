@@ -19,6 +19,7 @@ Qwen3-0.6Bで原理・正確性を確認してからNanbeige4.3-33Bで検証す�
 | G0〜G8・現在地・未決事項・次の検証条件 | [05 検証ゲート](05_GATES.md) |
 | どこを最適化対象として絞るか（提案） | [06 最適化対象](06_OPTIMIZATION_TARGETS.md) |
 | どの学習方策で最適化するか（提案） | [07 方策学習パイプライン](07_POLICY_LEARNING_PIPELINE.md) |
+| 将来の初回KV需要・一括補完・保存コストの設計（提案） | [08 初回KV需要のモデル](08_KV_FIRST_USE_MODEL.md) |
 | 何が確定、何が提案か、変更の根拠 | [設計判断ログ](DECISIONS.md) |
 | 先行研究の何を参照・採用候補にしたか | [先行研究・技術的出典台帳](PRIOR_ART_AND_ATTRIBUTION.md) |
 | `main`への直接コミットなどのGitHub方針 | [運用規約](REPOSITORY_POLICY.md) |
