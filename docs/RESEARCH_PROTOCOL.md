@@ -20,6 +20,8 @@ Qwen3-0.6Bで原理・正確性を確認してからNanbeige4.3-33Bで検証す�
 | どこを最適化対象として絞るか（提案） | [06 最適化対象](06_OPTIMIZATION_TARGETS.md) |
 | どの学習方策で最適化するか（提案） | [07 方策学習パイプライン](07_POLICY_LEARNING_PIPELINE.md) |
 | 将来の初回KV需要・一括補完・保存コストの設計（提案） | [08 初回KV需要のモデル](08_KV_FIRST_USE_MODEL.md) |
+| 最終ON位置から必要KV個数を導く（条件付き数学命題） | [09 最終ON位置とKV射影](09_LAST_USE_BOUND.md) |
+| 既知技術と独自性候補の区別（設計監査） | [10 新規性と合理性](10_NOVELTY_AND_RATIONALITY.md) |
 | 何が確定、何が提案か、変更の根拠 | [設計判断ログ](DECISIONS.md) |
 | 先行研究の何を参照・採用候補にしたか | [先行研究・技術的出典台帳](PRIOR_ART_AND_ATTRIBUTION.md) |
 | `main`への直接コミットなどのGitHub方針 | [運用規約](REPOSITORY_POLICY.md) |
