@@ -102,4 +102,4 @@ r<1\quad\Longleftrightarrow\quad k>\frac{d}{2n_{\rm KV}d_h}
 
 残差状態からのKV再構成、共有保存、GQAの損益分岐は既知研究と重なる。[出典台帳のRW-05〜RW-09](PRIOR_ART_AND_ATTRIBUTION.md)に帰属関係をまとめる。
 
-[← 02 Router学習](02_ROUTER_TRAINING.md)｜[04 実験設計 →](04_EVALUATION.md)｜[文書ガイド](README.md)
+[← 02 Router学習](02_ROUTER_TRAINING.md)｜[04 実験設計 →](04_EVALUATION.md)｜[06 KV補完負債に関する設計案](06_OPTIMIZATION_TARGETS.md)｜[文書ガイド](README.md)
