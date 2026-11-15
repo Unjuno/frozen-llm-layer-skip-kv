@@ -144,7 +144,7 @@ z_{t,j}-
 - Qwen3とNanbeigeでGPU速度利益が得られるか。
 - 提案方式と先行研究との差分が、論文として独立した貢献となるか。
 
-研究上の独自性を評価する前に、[先行研究・技術的出典台帳](PRIOR_ART_AND_ATTRIBUTION.md)で既知要素との対応を確認する。
+研究上の独自性を評価する前に、[先行研究・技術的出典台帳](PRIOR_ART_AND_ATTRIBUTION.md)と[10 新規性・合理性の監査](10_NOVELTY_AND_RATIONALITY.md)で既知要素との対応を確認する。
 
 確定済みの骨格を壊さない改良方策は、**別途[06 最適化対象](06_OPTIMIZATION_TARGETS.md)と[07 方策学習パイプライン](07_POLICY_LEARNING_PIPELINE.md)へ「提案・未確定」として記録**する。補完負債の将来需要を独立性を仮定せず整理する精密モデルは[08 初回KV需要・補完費用](08_KV_FIRST_USE_MODEL.md)に置く。
 
