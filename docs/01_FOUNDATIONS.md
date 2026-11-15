@@ -144,4 +144,6 @@ z_{t,j}-
 - Qwen3とNanbeigeでGPU速度利益が得られるか。
 - 提案方式と先行研究との差分が、論文として独立した貢献となるか。
 
+研究上の独自性を評価する前に、[先行研究・技術的出典台帳](PRIOR_ART_AND_ATTRIBUTION.md)で既知要素との対応を確認する。
+
 次の文書：[02 Router学習](02_ROUTER_TRAINING.md) ／ [文書ガイド](README.md)
