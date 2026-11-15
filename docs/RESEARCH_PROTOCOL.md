@@ -18,6 +18,7 @@ Qwen3-0.6Bで原理・正確性を確認してからNanbeige4.3-33Bで検証す�
 | H1〜H4・A0〜D2・GPU測定・統計判定・再現性 | [04 実験設計](04_EVALUATION.md) |
 | G0〜G8・現在地・未決事項・次の検証条件 | [05 検証ゲート](05_GATES.md) |
 | 何が確定、何が提案か、変更の根拠 | [設計判断ログ](DECISIONS.md) |
+| 先行研究の何を参照・採用候補にしたか | [先行研究・技術的出典台帳](PRIOR_ART_AND_ATTRIBUTION.md) |
 | `main`への直接コミットなどのGitHub方針 | [運用規約](REPOSITORY_POLICY.md) |
 
 [文書ガイド](README.md)では、実験に着手したときの更新先も説明します。
