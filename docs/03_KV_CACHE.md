@@ -100,4 +100,6 @@ r<1\quad\Longleftrightarrow\quad k>\frac{d}{2n_{\rm KV}d_h}
 - VRAM予算到達時の状態遷移、デッドロック、NaN、不正参照を検出。
 - Nsightで補完Kernelの時間、GPU待機、Stream依存、ピークVRAMを測定。
 
+残差状態からのKV再構成、共有保存、GQAの損益分岐は既知研究と重なる。[出典台帳のRW-05〜RW-09](PRIOR_ART_AND_ATTRIBUTION.md)に帰属関係をまとめる。
+
 [← 02 Router学習](02_ROUTER_TRAINING.md)｜[04 実験設計 →](04_EVALUATION.md)｜[文書ガイド](README.md)
