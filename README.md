@@ -36,6 +36,7 @@
 | [04 比較実験と評価](docs/04_EVALUATION.md) | H1〜H4、アブレーション、GPU計測・統計 |
 | [05 検証ゲート](docs/05_GATES.md) | **現在地・未決事項・次に進む条件** |
 | [判断ログ](docs/DECISIONS.md) | 確定した方針と実装候補を区別して保存 |
+| [先行研究・出典台帳](docs/PRIOR_ART_AND_ATTRIBUTION.md) | 何を参考にし、何を採用候補としたか／本研究との差分 |
 | [運用規約](docs/REPOSITORY_POLICY.md) | `main`での直接更新・公開・記録ルール |
 
 旧リンクからは[RESEARCH_PROTOCOL.md](docs/RESEARCH_PROTOCOL.md)を入口として使えます。
