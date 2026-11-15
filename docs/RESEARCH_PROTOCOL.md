@@ -83,24 +83,24 @@ H4の「探索中により良い経路が見つかった」と「学習Routerが
 
 全中間層の確率を**一回のLinear Head**で出す。
 
-\`\`\`math
+```math
 p_t=\sigma(Wh_t+b)
-\`\`\`
+```
 
 学習時はRouter出力に探索用の独立ビット反転を加える。反転前確率と反転後のサンプリング確率は異なる。
 
-\`\`\`math
+```math
 q_{t,j}=\varepsilon+(1-2\varepsilon)p_{t,j},\qquad
 m_{t,j}\sim\mathrm{Bernoulli}(q_{t,j})
-\`\`\`
+```
 
 初期方式では、現在の特徴量に条件付けたBernoulli積で**マスク全体**をサンプリングする。
 
-\`\`\`math
+```math
 \pi_\theta(m_t\mid h_t)=
 \prod_{j=2}^{L-1}
 q_{t,j}^{m_{t,j}}(1-q_{t,j})^{1-m_{t,j}}
-\`\`\`
+```
 
 ここでの条件付き独立性は、**層間相関を完全に表現できることを保証しない**。ただし報酬は組み合わせ全体に与えるため、各層のON/OFFを単独に採点するわけではない。
 
@@ -110,23 +110,23 @@ q_{t,j}^{m_{t,j}}(1-q_{t,j})^{1-m_{t,j}}
 
 主報酬はタスク正解性と費用の組合せ。元の教師モデルとのKL距離だけにはしない。
 
-\`\`\`math
+```math
 R(\tau)=Q(\tau)-\lambda\,T(\tau)/T_0
-\`\`\`
+```
 
 学習初期のTは実行層数などの代理費用を時間相当に換算した推定値でもよいが、**実測値との区別を必ずログに残す**。最終評価では実GPU時間を測る。品質の非劣性は報酬と別の制約として評価する。
 
-\`\`\`math
+```math
 J(\theta)=\mathbb{E}_{x,\tau}[R(\tau)]
-\`\`\`
+```
 
-\`\`\`math
+```math
 \nabla_\theta J=
 \mathbb{E}_{x,\tau}\left[
 (R(\tau)-b_{LOO})
 \sum_t\nabla_\theta\log\pi_\theta(m_t\mid h_t)
 \right]
-\`\`\`
+```
 
 **導出の要点：** 凍結LLMとマスク・トークン列を固定したとき、Routerパラメータは選択したマスクの確率に現れる。軌跡確率の勾配を「軌跡確率×対数確率の勾配」に展開するとREINFORCEを得る。更新時のRouterを固定した条件で、独立な別Rolloutから作るLeave-one-out基準値は対象Rolloutの選択に依存しないため、期待勾配を変えない。
 
@@ -169,16 +169,16 @@ J(\theta)=\mathbb{E}_{x,\tau}[R(\tau)]
 
 ### 4.3 連続スキップ入力共有の容量上限の目安
 
-\`\`\`math
+```math
 M_{state}=ds,\qquad
 M_{KV}=2k\,n_{KV}\,d_hs
-\`\`\`
+```
 
 共有隠れ状態の方がEager KVより**単純保存容量で**小さくなる条件：
 
-\`\`\`math
+```math
 k>\frac{d}{2n_{KV}d_h}
-\`\`\`
+```
 
 BF16、モデルconfigの数値を使用するとQwen3は**連続1層以上**、Nanbeigeは**連続4層以上**が目安。なお、この式は1 token×1区間の状態とKVだけを比較し、Allocatorや後から生成されるKVの共存、参照管理、実行時間を含まない。**小さい方が速いとは限らない**。
 
@@ -189,7 +189,7 @@ BF16、モデルconfigの数値を使用するとQwen3は**連続1層以上**、
 - native full model vs **masked all-ON** のLogits・生成比較。
 - 固定マスク・固定生成トークン列のReplayで Eager vs On-demand vs Batched vs Shared/Adaptive のKV・Logits比較。
 - マスク：単層Skip、連続Skip、交互Skip、すべての中間層Skip、長期間のSkip後の再実行。
-- キャッシュ状態：\`KV_READY\` / \`INPUT_SAVED\` / \`UNAVAILABLE\` を追跡。
+- キャッシュ状態：`KV_READY` / `INPUT_SAVED` / `UNAVAILABLE` を追跡。
 - 正しい位置と値、欠損参照・NaNの不在、ピークVRAM、CUDA Event依存関係の遵守。
 - 異なる計算Kernelの許容誤差は**実験前に**定義し、bitwise一致と近似一致を区別する。
 
@@ -198,7 +198,7 @@ BF16、モデルconfigの数値を使用するとQwen3は**連続1層以上**、
 ### 5.1 Backendの役割
 
 - 正確性実装：Hugging Face Transformers＋PyTorch。モデルrevision・Tokenizer・Attention Backendを固定。
-- 速度実装：CUDA対応実行器を別途設計・比較（SGLang系実装も検討）。\`.item()\`等のCPU同期、Gather/Scatter、Kernel Launch費用が重要。
+- 速度実装：CUDA対応実行器を別途設計・比較（SGLang系実装も検討）。`.item()`等のCPU同期、Gather/Scatter、Kernel Launch費用が重要。
 - **FLOPs削減率は実測速度の代用にしない**。Batch 8では少数トークンの層実行によって重みアクセスが残る可能性がある。
 
 ### 5.2 GPU費用モデル
