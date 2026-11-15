@@ -217,4 +217,6 @@ Cでは、[01_FOUNDATIONS](01_FOUNDATIONS.md)と[07 学習方策](07_POLICY_LEAR
 5. 状態に依存する非学習補正（C）は、別の改善候補として採用可否を保留する。
 6. 今は理論設計のみで、実装・GPU測定・学習実行の記録は作らない。
 
-[← 06 最適化対象](06_OPTIMIZATION_TARGETS.md)｜[07 学習方策](07_POLICY_LEARNING_PIPELINE.md)｜[03 KV補完](03_KV_CACHE.md)｜[出典台帳](PRIOR_ART_AND_ATTRIBUTION.md)
+同じ生成経路で、最後に当該層を使った位置以降のSkip位置は将来KVを必要としない。**この事後的な必要KV数の恒等式**とIID/Markovの簡略化については[09 最終ON位置とKV射影](09_LAST_USE_BOUND.md)を参照する。これを**未来が見えるオンライン予測器**と混同しない。
+
+[← 06 最適化対象](06_OPTIMIZATION_TARGETS.md)｜[07 学習方策](07_POLICY_LEARNING_PIPELINE.md)｜[09 最終ON位置とKV](09_LAST_USE_BOUND.md)｜[03 KV補完](03_KV_CACHE.md)｜[出典台帳](PRIOR_ART_AND_ATTRIBUTION.md)
