@@ -238,6 +238,8 @@ r'_t=r_t+\Phi(s_{t+1})-\Phi(s_t)
 | GPUで層数の割に速くない | Batch内の活性層、重み帯域、Gather/Scatter、同期 | FLOPs・平均層数を主評価にしない |
 | 負債補正が効かない | 費用推定の誤差、線形加算近似の破綻、品質優先度の不一致 | P4（補正なし）とP5（補正あり）を独立比較 |
 
+**追加の合理性監査：** [09 最終ON位置と必要KV数](09_LAST_USE_BOUND.md)から、Lazyが「補完しなくて済む投影数」を増やすには、単にSkipを増やすだけでは不十分で、各層の最後のON位置と終了条件が関係する。ただしこれをRouterの追加報酬にすれば良いとは限らない。**総GPU時間に補完費用が含まれている場合は二重計上を避ける**。詳細は[10 新規性監査](10_NOVELTY_AND_RATIONALITY.md)。
+
 **新規性についての留保：** 目的の構造化は既存のCMDP・RLOO・ポテンシャル型報酬・KV管理から多くを借りる。**「学習可能Linear Routerの選ぶ全層マスクが作る補完負債」に注目した追加利益**が確認されるまでは新規性を断定しない。
 
 [← 06 最適化対象](06_OPTIMIZATION_TARGETS.md)｜[02 Routerの基準学習](02_ROUTER_TRAINING.md)｜[03 KVの正確性](03_KV_CACHE.md)｜[04 評価の正本](04_EVALUATION.md)｜[出典台帳](PRIOR_ART_AND_ATTRIBUTION.md)
