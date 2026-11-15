@@ -139,4 +139,4 @@ P_\theta(\tau\mid x)=\prod_t \pi_\theta(m_t\mid h_t)\,P_{\rm LLM}(y_t\mid x,y_{<
 
 ### 基礎文献
 
-[Williams (1992), REINFORCE, DOI:10.1007/BF00992696](https://doi.org/10.1007/BF00992696)
+[Williams (1992), REINFORCE, DOI:10.1007/BF00992696](https://doi.org/10.1007/BF00992696)。学習の原理参照と関連するRouter研究の差分は[出典台帳のRW-01〜RW-04](PRIOR_ART_AND_ATTRIBUTION.md)を参照。
