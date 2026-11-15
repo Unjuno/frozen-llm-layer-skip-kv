@@ -146,4 +146,6 @@ z_{t,j}-
 
 研究上の独自性を評価する前に、[先行研究・技術的出典台帳](PRIOR_ART_AND_ATTRIBUTION.md)で既知要素との対応を確認する。
 
+確定済みの骨格を壊さない改良方策は、**別途[06 最適化対象](06_OPTIMIZATION_TARGETS.md)と[07 方策学習パイプライン](07_POLICY_LEARNING_PIPELINE.md)へ「提案・未確定」として記録**する。
+
 次の文書：[02 Router学習](02_ROUTER_TRAINING.md) ／ [文書ガイド](README.md)
