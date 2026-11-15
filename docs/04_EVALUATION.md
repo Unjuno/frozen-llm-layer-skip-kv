@@ -122,5 +122,6 @@ T_{\rm saved}-T_{\rm overhead}\ge0.05T_{\rm full}
 - KVの正確性条件：[03 KV補完](03_KV_CACHE.md)
 - Gateの進行条件：[05 検証ゲート](05_GATES.md)
 - GPU Servingと既存の動的Layer Skippingの比較文献：[先行研究・技術的出典台帳](PRIOR_ART_AND_ATTRIBUTION.md)
+- 未確定の最適化候補とパイプライン：[06 最適化対象](06_OPTIMIZATION_TARGETS.md)／[07 学習方策](07_POLICY_LEARNING_PIPELINE.md)。**比較実験IDは正式設計が確定するまで変更しない。**
 
 [← 03 KV補完](03_KV_CACHE.md)｜[05 検証ゲート →](05_GATES.md)｜[文書ガイド](README.md)
