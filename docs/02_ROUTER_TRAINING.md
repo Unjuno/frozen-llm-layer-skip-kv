@@ -135,7 +135,7 @@ P_\theta(\tau\mid x)=\prod_t \pi_\theta(m_t\mid h_t)\,P_{\rm LLM}(y_t\mid x,y_{<
 
 **記録必須：** 使用した実行マスクとlog probability、学習Seed、プロンプトID、出力列、回答の正誤、報酬、推定または実測費用の区別、早期EOS、ルータ出力のEntropy、学習更新回数。
 
-[← 01 研究目的](01_FOUNDATIONS.md)｜[03 KV補完 →](03_KV_CACHE.md)｜[文書ガイド](README.md)
+[← 01 研究目的](01_FOUNDATIONS.md)｜[03 KV補完 →](03_KV_CACHE.md)｜[07 改良学習方策（提案）](07_POLICY_LEARNING_PIPELINE.md)｜[文書ガイド](README.md)
 
 ### 基礎文献
 
