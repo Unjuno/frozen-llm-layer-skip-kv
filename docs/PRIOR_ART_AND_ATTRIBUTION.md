@@ -39,6 +39,18 @@
 
 **今後、略称だけではなく「正式名称＋DOIまたはarXiv ID」で特定する。** 査読済み/プレプリントの状態も混同しない。
 
+## 2.1 今回の最適化設計で追加参照する研究
+
+| ID | 一次文献 | 今回、具体的に参考にした要素 | 本研究での扱い |
+|---|---|---|---|
+| **RW-11** | Ahmadian et al. (2024), [Back to Basics: Revisiting REINFORCE Style Optimization for Learning from Human Feedback in LLMs](https://arxiv.org/abs/2402.14740), arXiv:**2402.14740** | REINFORCE型の単純な最適化と、同一プロンプト複数出力のLeave-one-out型報酬基準化（RLOO）を学習器の比較候補にする | **既知の分散低減設計**。本研究の新規性とは主張しない。Router学習専用に適用できるかは未検証 |
+| **RW-12** | Achiam et al. (2017), [Constrained Policy Optimization](https://proceedings.mlr.press/v70/achiam17a.html), ICML 2017 / [arXiv:1705.10528](https://arxiv.org/abs/1705.10528) | 品質下限とGPU時間・メモリの**制約付き目的**を区別するための既存理論 | この論文のCPOアルゴリズムを実装・採用したわけではない。**報酬重みだけで制約を保証できない**という設計上の注意の参照 |
+| **RW-13** | Ng, Harada & Russell (1999), [Policy invariance under reward transformations: Theory and application to reward shaping](https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf), ICML 1999 | KV補完負債の中間的な学習信号に対し、**ポテンシャル差**を使うと終端条件下で方策の順位を保てるという既知原理 | 未確定の追加学習方式。終端ポテンシャルが0などの条件が必要。**学習済み効果・新規性を主張しない** |
+| **RW-14** | Shi et al. (2026), [Multi-Segment Attention: Enabling Efficient KV-Cache Management for Faster Large Language Model Serving](https://arxiv.org/abs/2606.02964), arXiv:**2606.02964**（システム名 *AsymCache*） | 再計算費用、KVキャッシュの利用、GPUカーネル効率を組み合わせる**費用考慮型Scheduler**の先行例 | 単純に「KV費用を考慮したJoint Scheduler」を新規性とはしない。対象はKVのキャッシュ管理であり、本研究は**Dynamic Layer Skipの学習方策が負債を発生させること**に注目 |
+| **RW-15** | Laitenberger et al. (2026), [What Layers When: Learning to Skip Compute in LLMs with Residual Gates](https://proceedings.iclr.cc/paper_files/paper/2026/hash/7e3491e922bfd199ea34ecafeb7380f0-Abstract-Conference.html), ICLR 2026 (*GateSkip*) | トークン単位の計算省略において、残差のGatingで経路と品質を調整する別方式 | GateSkipは微分可能な残差ゲートと計算予算を扱う。本研究は**凍結全層＋第1層一括Linear Router＋生成報酬＋欠損KV補完負債**。品質改善自体は既知の可能性 |
+
+新規の出典は、[06 最適化対象](06_OPTIMIZATION_TARGETS.md)と[07 方策学習パイプライン](07_POLICY_LEARNING_PIPELINE.md)の**理論設計の参考**として記録する。これら論文のコード・データ・図表を複製した事実はない。
+
 ## 3. 概念ごとの「どこから・何を」
 
 | 本研究の要素 | 参照元 | 本研究で独自性として**主張しないこと** | 未確定の差分候補 |
