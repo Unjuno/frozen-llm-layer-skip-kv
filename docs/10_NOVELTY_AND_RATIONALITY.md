@@ -1,6 +1,6 @@
 # 10｜新規性と合理性の監査：何を主張し、何を主張しないか
 
-> **状態：未確定の研究上の主張／設計監査。** 文献調査の完了や新規性の証明ではない。コード・実験・期限を追加しない。既存の**凍結LLM＋第1層Linear Router＋全中間層の一括ON/OFF＋生成報酬＋遅延KV**という骨格は変更しない。
+> **状態：研究上の差分の監査（未確定）。** 文献調査・実験・新規性証明は未完了。**主題は第1Attention活性の再利用＋単一Linear Headによる全中間層のトークン別実行領域学習**。遅延KV・GPU費用は、それを成立させる従属課題。実装・実験・期限は追加しない。
 
 ## 1. 「新規性を確保する」とは
 
@@ -13,7 +13,8 @@
 | **既知：残差からの正確なKV再構成** | 「KVを遅延して作れる」だけで新規性を主張しない | [Residual Stream / AnchorKV](PRIOR_ART_AND_ATTRIBUTION.md) |
 | **既知：再計算費用によるキャッシュ選択** | 「GPU費用を見てEager/Lazyを決める」だけを新規性としない | [AsymCache](PRIOR_ART_AND_ATTRIBUTION.md) |
 | **一般的な数学的観察** | 最後のONより後のSkip位置はその要求内でKVを再利用しない、という[09の恒等式](09_LAST_USE_BOUND.md)を「新しい定理」と呼ばない | 条件付きの初等的な恒等式 |
-| **未検証の独自性候補** | **生成中のトークン単位全マスク方策を、将来KV需要と補完負債を内生的に生む行動として評価し、品質制約付き実GPU時間で学習する** | 既存方式と比較して追加利益を実証できるか未確認 |
+| **未検証の独自性候補（主）** | **第1Attentionの既存活性を再利用し、単一Linear Headでトークン別の全中間層実行領域を一括学習する構成** | 類似研究との差分・追加利益を検証するまで新規性未確定 |
+| **未検証の独自性候補（派生）** | **動的マスクが将来KV需要を生むことを考慮した追加学習** | 中心の学習設計が成立した後の補助研究 |
 
 ### 第1Attention活性の再利用は効率上の設計条件であり、独自性の主張ではない
 
@@ -23,13 +24,13 @@
 - Headのために別のTransformerやAttentionを追加しない。
 - **第1層のMLPは必ず完了**し、その出力を中間層へ渡す。
 - Attention活性のTap位置（残差加算前後・Block完了後）は**未確定の設計詳細**として区別する。
-- 第1Attentionを二重に計算しないことは**追加計算回避**であり、Headの行列積・分岐・同期まで無料になる保証ではない。
+- 第1Attentionを二重に計算しないのは**主設計の前提**。全層モデルはもともと第1Attentionを1回実行するため、これだけを元モデルに対する高速化とは言わない。Headの演算・分岐・同期には追加費用がある。
 
-**新規性の中心候補は変えない：** 第1Attention活性を使って選択する全中間層マスクの方策と、そのマスクから生じる将来KV再構成費用の**学習上の共同最適化**である。
+**新規性候補の優先順位：** 第1Attention活性に基づく**単一Linear Headの一括・トークン別実行領域選択を生成結果で学習する構造**をまず考察する。KV再構成費用を含む共同最適化は**追加の独自性候補**であり、主題を置き換えない。
 
-## 2. 新規性候補は「内生的な需要」への方策学習に絞る
+## 2. 主題に対する新規性境界：活性再利用と動的実行領域の学習
 
-**既知のキャッシュSchedulerに与えられるKV需要**と、**Layer Routerが自らKV需要を生み出す**問題を明確に区別する。
+**第一に確認するのは、共有した第1Attention活性から単一Linear Headが全中間層のトークン別ON/OFFを学ぶ構造を、既知のRouter-Tuning・Dr.LLM・FlexiDepth等とどう区別するかである。** 再利用するAttention活性そのものは既知の共有表現であり、無条件に新規性を主張しない。その後の派生課題として、**既知のキャッシュSchedulerに与えられるKV需要**と、**Layer Routerが自らKV需要を生み出す**問題を区別する。
 
 - 既知のKV管理は、生成が必要とするキャッシュを保持・復元する費用を扱う。
 - 本研究のRouterは、各トークンである層をON/OFFにすることで、**将来のKV需要の発生時刻と必要個数自体を変える**。
@@ -38,7 +39,7 @@
 
 **研究主張の候補（未確定）：**
 
-> A frozen LLM equipped with a single linear, one-shot multi-layer masking router can be optimized on generated trajectories with exact deferred KV reconstruction. The routing policy is trained against the GPU cost that its own future KV demand induces, rather than just layer count or an independently optimized cache scheduler.
+> A frozen LLM reuses its existing first-layer attention activations as inputs to a single linear decision head that jointly selects all intermediate execution masks per generated token. Only this head is trained from complete generation trajectories; exact deferred KV reconstruction supports these dynamic execution paths. Cache-aware cost optimization is an optional subsequent extension.
 
 **留保：** この記述だけでは新規性を保証できない。似た共同最適化が先行研究にないか、同等のBaselineが作れるかを文献調査と実験で検証する必要がある。
 
@@ -62,7 +63,7 @@
 | **C：任意の非学習KV状態補正** | 第1層特徴が同じでも補完状態が異なる場合の経路選択を区別 | Linear W,bのみ |
 | **D：固定マスクへの退化を監査** | どの入力でも同じ層をSkipするならRouterの適応性が失われる | 新しい学習パラメータなし |
 
-**Bを主たる研究対象、Cのみ任意の改善候補**とする。Dは新しい制御器ではなく、**静的Skipへの退化を検出する研究設計上の監査**である。
+**Aを主たる研究対象**とする。Bは生成学習したAに対するKV/GPU費用の派生的拡張、Cは未確定の任意補正、Dは固定Skipへの退化の監査である。
 
 [09](09_LAST_USE_BOUND.md)が示す「同じ平均ON率でも末尾OFF区間長が変わる」という結果は**事後の費用を解析するための性質**であり、時間的相関や末尾OFF長を**最大化する学習目的にしない**。連続して同じマスクが最適な場面は許すが、**連続させること自体を報酬にしない**。
 
@@ -117,11 +118,11 @@
 
 **より合理的な主戦略：**
 
-1. 現行Linear Routerの**全中間層ON/OFFと生成中学習**をそのまま基準にする。
-2. **最後にONになる時刻**から、Lazyが射影計算を本当に省く条件を定量化する。ただし、**末尾OFF長や同一マスク維持を直接最適化しない**。
-3. **終端まで実際に発生したKV補完・待機・分岐を含むGPU時間**で、Routerの再学習を考える。
-4. **費用の重複計上を避け、品質・VRAMをハードな条件として扱う**。
-5. **既存Router＋Scheduler後付け**との差が無ければ、「共同最適化」の新規性を主張しない。
+1. **既存第1Attention活性の共有→単一Linear Head→中間層全体のトークン別マスク**という主構造を保つ。
+2. **Headだけを実際の生成報酬で学習し、同等の費用で固定Skipより適応的選択が有利か**を主たる理論・将来の検証課題にする。
+3. SkipによるKV欠損は正しく補完し、**第1Attention・第1層MLP・最終層の実行を省略しない**。
+4. KV費用・最後のON位置・GPU補完バーストは**副次的な費用解析**として扱い、同じマスクを維持する学習目標を作らない。
+5. KV補完費用込みの再学習が後付けSchedulerに勝つ場合だけ、**共同最適化の追加的な効果**として主張する。
 
 **この結論は設計上の優先順位であり、未測定の性能改善ではない。**
 
