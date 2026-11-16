@@ -20,6 +20,10 @@
 | **Shared Lazy** | 連続する完全スキップ区間の同一入力を共有保存 | 層別重みでKV射影 | メモリを節約できるか |
 | **Adaptive** | 状況に応じEager／Lazyを選択 | 補完期限・VRAM予算を管理 | 総GPU時間・ピークVRAM |
 
+## 第1層AttentionとKVの共有範囲
+
+**第1層は必ず実行し、通常のLLM経路でSelf-Attentionと第1層KVを一度だけ生成・再利用する。** Linear Headが第1Attentionの既存活性を読み取るために第1層AttentionやKV射影を重複実行しない。**中間層をSkipした結果生じる欠損KV**についてのみ、本書のEager／Lazy補完を議論する。第1層MLPは必ず完了し、その完全な第1Block出力を中間層Executorへ渡す。[11 共有活性とLinear Head](11_SHARED_ACTIVATION_ROUTING.md)を参照。
+
 ## 正確性の不変条件
 
 1. **Attentionを実行する前**に、そのAttentionが参照する過去の全位置のKVが準備できている。
