@@ -6,7 +6,7 @@
 
 - 凍結LLM：Embedding・全Transformer層・LM Headの重みは更新しない。
 - **第1層・最終層は必ず実行**。その他の全中間層をON/OFF候補とする。
-- 現在トークンについて**第1層の隠れ状態から一つのLinear Routerがマスク全体を一括生成**する。
+- 現在トークンについて**第1層Attentionまでの既存活性を通常のLLM経路と共有し、一つのLinear Headがマスク全体を一括生成**する。第1Attentionは二重に実行しない。厳密な共有点は[11](11_SHARED_ACTIVATION_ROUTING.md)で整理する。
 - ランダムなマスクで**実際に自己回帰生成**し、出力品質と実行費用から**Linear Routerだけ**学習する。
 - 元モデルとの出力一致だけを目的にしない。元モデルの誤答が正解になる経路も評価する。
 - 初期はQwen3-0.6B、続いてNanbeige4.3-33B。中間3B/7Bなし。
@@ -40,10 +40,10 @@ flowchart TD
 | 記号 | 意味（日本語・定義） | SI単位 | 定義域/条件 | 型 |
 |---|---|---|---|---|
 | \(L\) | Transformer層数 | 1 | 28または52 | 正整数 |
-| \(d\) | 第1層後の隠れ幅 | 1 | 1024または7168 | 正整数 |
+| \(d\) | 共有するAttention系の活性ベクトルの隠れ幅 | 1 | 1024または7168 | 正整数 |
 | \(t,u\) | 現在／任意のDecode位置 | 1 | 正整数 | 整数 |
 | \(j\) | 中間Transformer層番号 | 1 | 2〜L−1 | 整数 |
-| \(h_t\) | 第1層後の隠れ状態 | 1 | \(\mathbb R^d\) | ベクトル |
+| \(h_t\) | Linear Headが読み取る第1層の共有活性（候補A: Attention残差後、B: Block完了後） | 1 | \(\mathbb R^d\)、[11](11_SHARED_ACTIVATION_ROUTING.md)で定義 | ベクトル |
 | \(D_t\) | 層別の未補完位置・共有入力・KV準備状態 | 1 | 有限の状態集合 | 離散状態 |
 | \(s_t\) | 生成履歴・第1層特徴・KV準備状態を含む状態 | 1 | 生成過程の状態集合 | 状態 |
 | \(W\) | Linear Router重み | 1 | \(\mathbb R^{(L-2)\times d}\) | 行列 |
@@ -97,7 +97,7 @@ m_{t,j}\sim \mathrm{Bernoulli}(q_{t,j})
 q_{t,j}^{m_{t,j}}(1-q_{t,j})^{1-m_{t,j}}
 ```
 
-**注意：** この基準方策では \(p_t\) はhの関数のみ。状態 \(s_t\) に含まれる \(D_t\) は、報酬・Scheduler側では扱うが、**Router入力に直接は入れない**。26/50個のON/OFFを一括生成する骨格を保つ。
+**注意：** この基準方策では \(p_t\) は**第1Attentionから再利用した既存活性h**の関数のみ。第1層MLPの実行は必須であり、中間層Executorには**第1層を完了した出力**を渡す。状態 \(s_t\) に含まれる \(D_t\) は、報酬・Scheduler側では扱うが、**Router入力に直接は入れない**。26/50個のON/OFFを一括生成する骨格を保つ。
 
 ### 2.2 任意の追加方策：非学習の負債コスト補正
 
@@ -242,4 +242,4 @@ r'_t=r_t+\Phi(s_{t+1})-\Phi(s_t)
 
 **新規性についての留保：** 目的の構造化は既存のCMDP・RLOO・ポテンシャル型報酬・KV管理から多くを借りる。**「学習可能Linear Routerの選ぶ全層マスクが作る補完負債」に注目した追加利益**が確認されるまでは新規性を断定しない。
 
-[← 06 最適化対象](06_OPTIMIZATION_TARGETS.md)｜[02 Routerの基準学習](02_ROUTER_TRAINING.md)｜[03 KVの正確性](03_KV_CACHE.md)｜[04 評価の正本](04_EVALUATION.md)｜[出典台帳](PRIOR_ART_AND_ATTRIBUTION.md)
+[← 06 最適化対象](06_OPTIMIZATION_TARGETS.md)｜[11 活性共有とLinear Head](11_SHARED_ACTIVATION_ROUTING.md)｜[02 Routerの基準学習](02_ROUTER_TRAINING.md)｜[03 KVの正確性](03_KV_CACHE.md)｜[04 評価の正本](04_EVALUATION.md)｜[出典台帳](PRIOR_ART_AND_ATTRIBUTION.md)
