@@ -14,6 +14,7 @@ Qwen3-0.6Bで原理・正確性を確認してからNanbeige4.3-33Bで検証す�
 |---|---|
 | 研究目的・確定仕様・全体構造 | [01 研究の骨格](01_FOUNDATIONS.md) |
 | Linear Routerの数式・全層マスク学習・REINFORCE・探索 | [02 Routerの学習](02_ROUTER_TRAINING.md) |
+| 第1Attention活性の共有・第1層MLPとの依存関係・Tap候補 | [11 共有活性とLinear Head](11_SHARED_ACTIVATION_ROUTING.md) |
 | Eager/On-demand/Batched/Shared Lazy/AdaptiveとKV正確性 | [03 KV補完](03_KV_CACHE.md) |
 | H1〜H4・A0〜D2・GPU測定・統計判定・再現性 | [04 実験設計](04_EVALUATION.md) |
 | G0〜G8・現在地・未決事項・次の検証条件 | [05 検証ゲート](05_GATES.md) |
