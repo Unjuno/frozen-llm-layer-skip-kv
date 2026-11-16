@@ -67,6 +67,17 @@
 
 [10 新規性と合理性の監査](10_NOVELTY_AND_RATIONALITY.md)に、既知要素・未検証の共同最適化主張・反例をまとめる。
 
+## 2.3 第1層Attention活性の共有：実装構造の参照
+
+本研究の[11 共有活性とLinear Head](11_SHARED_ACTIVATION_ROUTING.md)は、**第1層Attentionを既存LLMとLinear Headで共通利用し、AttentionをRouter用に二重計算しない**という設計。これ自体は深層学習の一般的な共有表現構造であり、**新規性を主張しない**。
+
+| ID | 一次の実装・モデル文書 | 確認した技術上の境界 | 本研究の採用状況 |
+|---|---|---|---|
+| **ARCH-01** | [Hugging Face Transformers: Qwen3DecoderLayer](https://github.com/huggingface/transformers/blob/main/src/transformers/models/qwen3/modeling_qwen3.py) | 第1層Decoder BlockはSelf-Attention・残差加算の後にMLPを含む。**Attention出力とBlock完成出力は別** | 演算順序の参照。実装コードの複製なし |
+| **ARCH-02** | [NVIDIA NeMo: Nanbeige4.3-33B](https://docs.nvidia.com/nemo/automodel/model-coverage/large-language-models/nanbeige/Nanbeige4.3-33B) | モデルの宣言アーキテクチャは**LlamaForCausalLM**。第1層Attention/MLPの分割は実際のBackendとRevisionで照合する必要がある | モデル構造の参照。実装コードの複製なし |
+
+**実装時に必要な注意：** Qwen3の`output_attentions`などで取得するAttention**重み**は、Linear Head用に共有する**Hidden Stateの活性**とは異なる。Attention出力の残差加算前後、MLPまで完了したBlock出力のどれをTapとするかを事前に指定する。
+
 ## 3. 概念ごとの「どこから・何を」
 
 | 本研究の要素 | 参照元 | 本研究で独自性として**主張しないこと** | 未確定の差分候補 |
