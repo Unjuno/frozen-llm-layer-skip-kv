@@ -1,135 +1,111 @@
-# 11｜第1層Attention活性の共有とLinear実行領域Head（設計整理）
+# 11｜第1層Attentionの活性再利用とLinear実行領域Head（正本）
 
-> **区分：** ユーザー意図を反映したアーキテクチャ整理。**コード・学習・性能測定は未実施**。LLM重み凍結・第1/最終層の必須実行・中間全層のトークン別ON/OFFは不変。
+> **研究の中心的な構成。** これは最初から指定されていた計算共有の前提を正確に説明する文書である。**性能改善を確認した結果ではなく、設計仕様**。活性の厳密なTap位置は未決であり、勝手に確定しない。
 
-## 1. 何を「再利用」するのか
+## 1. 最初から変えない構造
 
-**第1Transformer層のSelf-AttentionをLLM本体とLinear Headのために二重実行しない**。第1層の通常のAttention計算から得られた活性テンソルを、**通常のLLM計算経路**と**実行領域を選ぶLinear Head**の2つの消費者が共有する。
+**既存LLMの第1Transformer層Self-Attentionを通常どおり一度だけ実行する。その計算で得た活性を、LLM本体の残りの処理と、実行領域を学習する単一のLinear Headの双方が参照する。**
 
-- Linear Headは**LLMの隠れ状態を変換して次層へ挿入するAdapter**ではない。
-- Linear Headは、**残りの中間Transformer層をどこまで実行・どこをSkipするか**の全層二値マスクを**1トークンにつき一括**出力する実行領域制御器。
-- 「Decision Model」は説明上の機能名であり、**別のLLM・別のAttentionモデル・追加の学習可能な深いネットワークは作らない**。
-- **活性の共有**は「同じDecodeステップ内で2経路が同じ値を読む」という意味。**Attention活性を未来トークンへそのまま流用する**という意味ではない。過去トークンに対するAttentionは通常の**K/V Cache**で再利用する。
-- 第1層そのものは**必ず最後まで実行**する。最終Transformer層も必ず実行。第1層のMLPをSkip対象に変更するわけではない。
+- Router専用の第2のAttentionモデルや別のLLMを立てない。
+- **第1層のSelf-AttentionだけでなくMLPまで必ず実行する**。Headの判定によって第1層を途中で終了しない。
+- **Linear Headが生成するのは中間Transformer層すべての実行マスク**であり、Hidden Stateの変換結果ではない。
+- **最終層も常時実行**する。その他の中間層はDecodeの各トークンについてON/OFFを一括選択する。
+- **重みは全凍結、学習対象はLinear HeadのW,bのみ**。
+- 活性共有は**同じ現在トークンのAttention出力を2つの経路で使用すること**。過去トークンのAttention活性を直接コピーすることとは区別する。過去の状態の再利用は通常のKVキャッシュが担う。
+- **Linear Headに活性を渡すだけでGPUが速くなったと主張しない**。標準の元モデルは元から第1Attentionを1回実行している。Headの追加行列積・Tensor分岐・同期はコストになる。
 
-## 2. 処理の正確な依存関係
+## 2. 依存関係（GPU上の並列性までは意味しない）
 
 ```mermaid
 flowchart TD
-  I[Token embedding] --> A1[第1層の正規化 / Self-Attention<br/>既存計算を1回だけ実行]
-  A1 --> S[第1 Attentionの活性を共有<br/>既存テンソルの読取り]
-  S --> R[Linear Head<br/>全中間層ON/OFFを一括予測]
-  S --> F[第1層の残りの処理<br/>MLPまで完了]
-  F --> E[中間層のExecutor]
-  R --> E
-  E --> L[最終Transformer層<br/>必ず実行]
-  L --> H[元のLM Head / 次Token]
-  R --> K[KV Scheduler<br/>選択経路に対応する補完]
-  K -. 各層実行前に必要KVを提供 .-> E
+    A[Embedding] --> B[既存第1層Self-Attention]
+    B --> C[計算済みAttentionの活性を共有]
+    C --> H[Linear Head<br/>中間層全体のON/OFFを一括予測]
+    C --> R[第1層の残差・MLPを完了]
+    H --> E[中間層Executor]
+    R --> E
+    H --> K[KV Scheduler]
+    K -. 正しい過去KV .-> E
+    E --> F[最終Transformer層を必ず実行]
+    F --> G[既存LM Head / 次トークン]
 ```
 
-図は**データ依存・制御依存**であり、CUDA Streamの並列実行が成立するという実測結果ではない。
+**Executorのデータ入力**は第1Blockが**完全に終わったHidden State**。**Executorの制御入力**はLinear Headの中間層マスク。この区別を失うと意図しない計算経路になる。
 
-特に、**Routerが初回Attentionからマスクを決めても、中間層Executorへ渡す隠れ状態は、必ず第1Transformer層のMLPまで完了した出力**である。ここを混同して、第1層MLPを飛ばして中間層へ進めてはいけない。
+## 3. Attention活性のどこを読むか（まだ未決）
 
-## 3. 厳密な活性の位置（重要な未決事項）
+第1層のAttention演算の周辺には、異なるTensorがある。いずれも専用の2回目のAttentionを必要としないが、**数値値・Headの表現力・同期条件は同一ではない**。
 
-Qwen3の一般的なDecoder Blockは**第1正規化 → Attention → 残差加算 → 第2正規化 → MLP → 残差加算**の順。Nanbeige4.3-33BはLlama系Decoder構造。参照先：
+| 候補 | Headの入力 | 第1層のMLPを実行するか | 設計上の扱い |
+|---|---|---|---|
+| **A** | Attention出力射影後、**残差加算の前**の活性ベクトル | **必ず実行** | 未決 |
+| **B** | Attention出力の**残差加算後**の活性ベクトル | **必ず実行** | 未決 |
+| **C** | 第1Transformer BlockをMLPまで完了したHidden State | **必ず実行** | 以前の文書で使われた入力点。Attentionを再計算しないが、「Attention直後」とは異なる |
 
-- [Hugging Face Transformers: Qwen3DecoderLayer](https://github.com/huggingface/transformers/blob/main/src/transformers/models/qwen3/modeling_qwen3.py)
-- [NVIDIA NeMo: Nanbeige4.3-33B model architecture](https://docs.nvidia.com/nemo/automodel/model-coverage/large-language-models/nanbeige/Nanbeige4.3-33B)
+**いま確定しているのは「第1Attentionで計算済みの活性を再利用する」という点まで**。A/Bをどちらか選定済みとは扱わない。Cは実装の比較対象・従来表記の対応として残すが、ユーザーの意図を置き換える主方式とはしない。
 
-**第1層のAttentionまで計算した結果を共有する**ことを採用方針とする。ただし、**Linear Headが参照するテンソルの厳密な境界**は以下の2候補を分ける。
+**注意：** `output_attentions`などで見られる**Attention重み行列**は、ここでいう**活性ベクトル**ではない。Attentionの結果として得られるHidden State側のTensorを参照する。
 
-| 候補 | Headに与える活性 | 第1Attentionを共有するか | 第1層MLPは必ず動くか | 状態 |
-|---|---|---|---|---|
-| **A：Attention残差加算後（設計上の第一候補）** | Attentionの出力射影と**残差加算まで完了した活性** | **はい** | **はい** | **暫定案・厳密タップ位置は未確定** |
-| **B：第1Block完了後（従来の資料表現）** | Attentionに続くMLPと残差加算まで完了した活性 | はい（Attentionを再実行しない） | はい | 比較する構造候補 |
-
-**採用したい内容に最も近いのはA**。ただし「Attention出力の残差加算前」と「加算後」も異なる値であり、外部仕様・実装で混同してはいけない。残差加算前の生Attention出力を使う案は**第3の未決候補**とし、現段階では選んだと断言しない。
-
-なお、Hugging Faceの`output_attentions`で得られる**Attention重み**と、ここでの**Attention活性ベクトル**は同一ではない。活性共有に必要なのは計算後のHidden State側の値である。
-
-## 4. 数理的な表現（候補Aの場合）
+## 4. 候補A/Bの数理整理
 
 **変数表**
 
-| 記号 | 意味（日本語・定義） | SI単位 | 定義域・前提 | 型 |
+| 記号 | 日本語の意味・定義 | 単位（SI） | 定義域・前提 | 型 |
 |---|---|---|---|---|
-| \(t\) | Decodeトークン位置 | 1 | 正整数 | 整数 |
-| \(L\) | 全Transformer層数 | 1 | 28/52 | 整数 |
-| \(d\) | 隠れ幅 | 1 | Qwen3=1024, Nanbeige=7168 | 整数 |
-| \(x_t\) | Embeddingから第1層へ渡すHidden State | 1 | \(\mathbb R^d\) | ベクトル |
-| \(\mathcal N_A\) | 第1層Attention前の正規化（固定重み） | 1 | \(\mathbb R^d\to\mathbb R^d\) | 写像 |
-| \(\mathcal A_1\) | 第1層Attention演算（出力射影・RoPE・既存KVを含む） | 1 | 入力と既存Cacheから\(\mathbb R^d\) | 写像 |
-| \(u_t\) | **第1層Attention後の残差加算済み活性** | 1 | \(\mathbb R^d\) | ベクトル |
-| \(\mathcal N_F\) | 第1層MLP前の正規化（固定重み） | 1 | \(\mathbb R^d\to\mathbb R^d\) | 写像 |
-| \(\mathcal M_1\) | 第1層MLP（固定重み） | 1 | \(\mathbb R^d\to\mathbb R^d\) | 写像 |
-| \(h_t^{(1)}\) | 第1Transformer Blockの完全な出力 | 1 | \(\mathbb R^d\) | ベクトル |
-| \(\theta\) | Linear Headの唯一の学習可能なパラメータ組 | 1 | \((W,b)\) | パラメータ組 |
-| \(\pi_\theta\) | Headが選ぶ全中間層のマスク確率分布 | 1 | \(\{0,1\}^{L-2}\)上の分布、学習時の探索方式に依存 | 確率分布 |
-| \(W\) | Linear Headの重み | 1 | \(\mathbb R^{(L-2)\times d}\) | 行列 |
-| \(b\) | Linear Headのバイアス | 1 | \(\mathbb R^{L-2}\) | ベクトル |
-| \(p_t\) | 中間全層のON確率 | 1 | \((0,1)^{L-2}\) | 確率ベクトル |
-| \(m_t\) | 中間全層の実行マスク（1=ON） | 1 | \(\{0,1\}^{L-2}\) | 二値ベクトル |
+| \(t\) | Decode位置 | 1 | 1以上 | 整数 |
+| \(L\) | Transformer層数 | 1 | Qwen3=28、Nanbeige=52 | 正整数 |
+| \(d\) | 隠れ幅 | 1 | Qwen3=1024、Nanbeige=7168 | 正整数 |
+| \(x_t\) | 第1層へ入力される隠れ状態 | 1 | \(\mathbb R^d\) | ベクトル |
+| \(\mathcal N_A\) | 第1層Attention前の正規化 | 1 | \(\mathbb R^d\to\mathbb R^d\)、LLM重み凍結 | 写像 |
+| \(\mathcal A_1\) | 第1層Self-Attention（出力射影を含む） | 1 | \(x_t\)・位置・過去KVを入力とする既存演算 | 写像 |
+| \(a_t\) | 第1Attentionの出力射影後、残差加算前の活性 | 1 | \(\mathbb R^d\) | ベクトル |
+| \(u_t\) | Attention残差加算後の活性 | 1 | \(\mathbb R^d\) | ベクトル |
+| \(\mathcal N_M\) | MLP前の正規化 | 1 | \(\mathbb R^d\to\mathbb R^d\)、凍結 | 写像 |
+| \(\mathcal M_1\) | 第1層のMLP | 1 | \(\mathbb R^d\to\mathbb R^d\)、凍結 | 写像 |
+| \(h_t^{(1)}\) | 第1Transformer Block完了後の隠れ状態 | 1 | \(\mathbb R^d\) | ベクトル |
+| \(f_t\) | Linear Headの選択済み入力（候補A/B） | 1 | \(a_t\)または\(u_t\) | ベクトル |
+| \(W\) | 学習可能なLinear Headの重み | 1 | \(\mathbb R^{(L-2)\times d}\) | 行列 |
+| \(b\) | 学習可能なLinear Headのbias | 1 | \(\mathbb R^{L-2}\) | ベクトル |
 | \(\sigma\) | 要素ごとのSigmoid | 1 | \(\mathbb R\to(0,1)\) | 関数 |
+| \(p_t\) | 全中間層のON確率 | 1 | \((0,1)^{L-2}\) | 確率ベクトル |
+| \(m_t\) | 全中間層の実行マスク | 1 | \(\{0,1\}^{L-2}\) | 二値ベクトル |
 
-第1層のSelf-Attention計算は既存LLMが**一度だけ**行う。
-
-```math
-u_t=x_t+\mathcal A_1(\mathcal N_A(x_t)).
-```
-
-その活性をLinear Headが**読み取って**中間層全体を決める。
+Qwen3/Llama系の**概念上の**第1Blockは：
 
 ```math
-p_t=\sigma(Wu_t+b),\qquad m_t\sim \pi_\theta(\cdot\mid u_t).
+a_t=\mathcal A_1\!\left(\mathcal N_A(x_t);\ {\rm position,KV}\right),\qquad
+u_t=x_t+a_t
 ```
-
-同じ`u_t`をLLMの第1層MLP側でも使い、第1Blockを完了する。
 
 ```math
-h_t^{(1)}=u_t+\mathcal M_1(\mathcal N_F(u_t)).
+h_t^{(1)}=u_t+\mathcal M_1\!\left(\mathcal N_M(u_t)\right)
 ```
 
-**Executorは \(h_t^{(1)}\) から中間層のON/OFFを適用**する。Linear Headの数値出力を直接LLMの隠れ状態へ加えるものではない。
+Linear Headは**第1層で既に生成した**いずれかの活性を読むだけ：
 
-ここで\(\pi_\theta\)の正確な探索分布・学習法は[02 Router学習](02_ROUTER_TRAINING.md)を正本とし、ランダムノイズ・報酬比較・REINFORCE等の候補を維持する。
+```math
+f_t\in\{a_t,u_t\},\qquad p_t=\sigma(Wf_t+b)
+```
 
-**次元チェック：** \(\mathcal A_1,\mathcal M_1\)の入出力は\(\mathbb R^d\)。\(Wu_t+b\)は\(L-2\)次元で無次元、確率マスクも無次元で整合。
+**この式はどちらのTapを採用するかを決めていない**。実際のマスクをサンプリングする確率分布・探索ノイズ・生成報酬の学習条件は[02](02_ROUTER_TRAINING.md)を参照。
 
-**ERROR CHECK：** 本式はQwen3/Llama系の**概念上の演算順序**であり、各BackendのFused Kernel・TP Sharding・Attention規約は別。数値的に別の正規化境界やAttention出力を`u_t`とみなすと式が変わる。**候補Aと従来の候補Bを同一モデルとして扱わない**。
+**正確性の不変条件：** Headによる判定とは独立に、Executorへ入るLLMのHidden Stateは\(h_t^{(1)}\)。Head出力をLLMのHidden Stateに足したり、MLPを省いたりしてはいけない。
 
-## 5. 活性共有が省くもの／省かないもの
+**次元チェック：** 正規化・Attention・MLPと残差の各項はd次元の無次元の内部活性。\(Wf_t+b\)はL−2次元の無次元スコアで、\(\sigma\)により確率になる。
 
-| 対象 | 活性共有でどうなるか |
-|---|---|
-| 第1層AttentionのQKV計算・Attention演算 | **同じDecodeステップでRouter用に再計算しない** |
-| 第1層のKV Cache | 既存LLM経路が通常生成し、Routerはこれを重複生成しない |
-| 第1層MLP | 必ず実行。Linear Headの入力と並行関係にできても、計算を省略するわけではない |
-| 中間層の計算 | Headが選択するマスクに基づいて実行/Skipされる |
-| 中間層の欠損KV | Schedulerが正しい層入力・位置から補完する |
-| Linear Headの行列積 | **追加のGPU処理**として発生する。共有によってこの費用がゼロにはならない |
-| 活性の分岐・Tensor Buffer・同期 | **追加費用があり得る**。Fused KernelやStreamに依存するので高速化は未確認 |
+**ERROR CHECK：** モデルのBackend、Fused Kernel、LayerNorm/RMSNorm、RoPE、GQA、Attention Cacheの更新順序が変わればTap取得方法も変わり得る。本節は**設計上の依存関係**を示すだけで、Kernelが並列に実行できること、追加オーバーヘッドゼロであること、精度・高速化を示すものではない。
 
-**学習時の勾配条件：** LLM全重みを凍結し、Linear Headだけ勾配を保持する。既存活性は読み取り専用（必要に応じてdetach）で利用し、LLMの本体経路へ勾配・in-place変更を伝播させない。
+## 5. KV補完との関係
 
-## 6. 今回の更新による責任分界
+第1層は常時実行するため、そのAttentionは通常のLLMと同じKVキャッシュを利用する。**中間層をSkipした後、同じ層を再びONにした際に不足する過去KV**は、[03 KV補完](03_KV_CACHE.md)が扱う。
 
-- **共通Attention Prefix**：LLM本体に存在する第1Attentionの演算と、その活性を一回だけ計算。
-- **Linear Decision Head**：共有活性から**トークンに適応した全中間層ON/OFF**を一括予測。
-- **LLM Layer Executor**：元の第1層を完成してからマスクに従う。第1・最終層は常時ON。
-- **KV Scheduler**：中間層で発生するKV欠損の保存・補完を管理。**Headのマスクを勝手に上書きしない**。
-- **学習目的**：生成品質（維持・改善）と実GPU時間。**固定マスク維持を目的にしない**。
+すべての層を同じ経路に固定することではなく、**活性からトークンに適応した複数層の実行領域を学習すること**が主目的。KV補完はその動的経路に従って必要なときだけ正しい値を準備する。
 
-この構造は、**二重計算の除去（活性共有）**と**動的な経路学習**を明確に分ける。両者は補完関係だが、活性共有だけを新規性と主張しない。
+## 6. 参照資料と管理
 
-## 7. 残すべき未決事項
+- [Qwen3DecoderLayer（Transformersの実装）](https://github.com/huggingface/transformers/blob/main/src/transformers/models/qwen3/modeling_qwen3.py)：Self-Attentionの残差加算とMLPの順序の一次コード参照。
+- [Nanbeige4.3-33BのモデルConfig](https://huggingface.co/Nanbeige/Nanbeige4.3-33B/blob/main/config.json)：LlamaForCausalLM、52層・隠れ幅7168の構造。
 
-1. **タップ位置**：候補A（Attentionの残差加算後）を第一候補にするか、残差加算前や候補B（第1Block完了後）を主方式にするか。
-2. **Tensor値の定義**：モデルごとの正規化・残差・Attention出力射影・GPU Backendとの対応。
-3. **速度費用**：活性分岐・Head実行・同期が、二重Attention不要という設計上の利益を損なわないか。
+研究方法に関する決定は[DECISIONS](DECISIONS.md)へ追記し、A/BのTapを選ぶまでは**未決**と明示する。
 
-上記は確認・理論整理すべき事項であって、**実装・実験を開始したという意味ではない**。
-
-[01 研究の骨格](01_FOUNDATIONS.md)｜[02 Router学習](02_ROUTER_TRAINING.md)｜[07 学習方策](07_POLICY_LEARNING_PIPELINE.md)｜[文書ガイド](README.md)
+[01 研究の骨格](01_FOUNDATIONS.md)｜[02 Linear Head学習](02_ROUTER_TRAINING.md)｜[03 KV補完](03_KV_CACHE.md)｜[文書ガイド](README.md)
