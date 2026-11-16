@@ -4,7 +4,7 @@
 
 ## 何を学習するか（最重要）
 
-**入力：** 現在のDecodeトークンについて、第1 Transformer層を実行した後の隠れ状態。
+**入力：** 現在のDecodeトークンについて、**既存LLMの第1層Self-Attentionまでで計算した活性を再利用**する。Attention残差加算後（候補A）を第一候補とし、第1Block完了後（候補B）を別のTap候補とする。厳密な位置は[11 活性共有](11_SHARED_ACTIVATION_ROUTING.md)を参照。**別のAttentionをRouter用に実行しない**。
 
 **出力：** 中間Transformer層**全部**の実行確率（Qwen3: 26、Nanbeige: 50）。
 
@@ -17,7 +17,7 @@
 ### 実装する学習ループ（設計）
 
 1. 学習プロンプトを1つ取り、**同じRouterパラメータ**で4〜8本を初期候補として独立にRolloutする。
-2. 各トークンの第1層出力から26/50個の確率を一括算出する。
+2. 各トークンの**第1層の既存Attention活性**を読み、26/50個の確率を一括算出する。第1層MLPは通常どおり完了し、Layer Executorの入力に渡す。
 3. 確率と探索ノイズで中間層のON/OFFマスクを一括サンプリングし、各層を実行／スキップして次トークンを生成する。
 4. マスク、log probability、生成トークン、生成長、費用、正解性、停止理由を記録する。
 5. 各Rollout全体の**タスク品質と推定費用**から報酬を得る。同じプロンプトの他のRolloutを報酬ベースラインにする。
@@ -30,10 +30,10 @@
 | 記号 | 意味（日本語・定義） | 単位（SI） | 定義域・範囲・条件 | 型 |
 |---|---|---|---|---|
 | \(L\) | Transformer総層数 | 1 | 28/52 | 正整数 |
-| \(d\) | 第1層出力の隠れ幅 | 1 | 1024/7168 | 正整数 |
+| \(d\) | 共有する第1層Attention系活性の隠れ幅 | 1 | 1024/7168 | 正整数 |
 | \(t\) | Decodeトークン位置 | 1 | 正整数 | 整数 |
 | \(j\) | 中間層番号 | 1 | \(2,\ldots,L-1\) | 整数 |
-| \(h_t\) | 第1層後の特徴 | 1 | \(\mathbb R^d\)、凍結LLMから取得 | ベクトル |
+| \(h_t\) | Linear Head入力の**共有活性**（候補A: Attention残差加算後／候補B: 第1Block完了後） | 1 | \(\mathbb R^d\)、凍結LLMが1回だけ計算。候補位置は[11](11_SHARED_ACTIVATION_ROUTING.md) | ベクトル |
 | \(W\) | Linear Router重み | 1 | \(\mathbb R^{(L-2)\times d}\) | 行列 |
 | \(b\) | Linear Routerバイアス | 1 | \(\mathbb R^{L-2}\) | ベクトル |
 | \(\theta\) | Router学習パラメータの組 | 1 | \((W,b)\) | パラメータ組 |
@@ -119,7 +119,7 @@ P_\theta(\tau\mid x)=\prod_t \pi_\theta(m_t\mid h_t)\,P_{\rm LLM}(y_t\mid x,y_{<
 
 **単位チェック：** 行列×ベクトルは無次元スコア、確率は無次元。時間比はs/sで無次元。したがって報酬と対数確率は無次元で、式の次元が整合する。
 
-**ERROR CHECK：** これは不偏な勾配推定の条件であり、**低分散・効率的収束の証明ではない**。Router入力特徴を再計算するとき、凍結LLMの過去の生成状態を勝手に変更してはいけない。方策に依存したマスク後処理があれば、実際のマスク分布を正しく評価する必要がある。
+**ERROR CHECK：** これは不偏な勾配推定の条件であり、**低分散・効率的収束の証明ではない**。第1Attention活性の共有は**追加Attention計算の回避**であり、Linear Headの演算・Tensor分岐・同期時間がゼロになるわけではない。Router入力特徴を再計算するとき、凍結LLMの過去の生成状態を勝手に変更してはいけない。方策に依存したマスク後処理があれば、実際のマスク分布を正しく評価する必要がある。
 
 ## 実装の初期比較（すべて仮設定）
 
@@ -135,7 +135,7 @@ P_\theta(\tau\mid x)=\prod_t \pi_\theta(m_t\mid h_t)\,P_{\rm LLM}(y_t\mid x,y_{<
 
 **記録必須：** 使用した実行マスクとlog probability、学習Seed、プロンプトID、出力列、回答の正誤、報酬、推定または実測費用の区別、早期EOS、ルータ出力のEntropy、学習更新回数。
 
-[← 01 研究目的](01_FOUNDATIONS.md)｜[03 KV補完 →](03_KV_CACHE.md)｜[07 改良学習方策（提案）](07_POLICY_LEARNING_PIPELINE.md)｜[文書ガイド](README.md)
+[← 01 研究目的](01_FOUNDATIONS.md)｜[11 第1Attention活性の共有](11_SHARED_ACTIVATION_ROUTING.md)｜[03 KV補完 →](03_KV_CACHE.md)｜[07 改良学習方策（提案）](07_POLICY_LEARNING_PIPELINE.md)｜[文書ガイド](README.md)
 
 ### 基礎文献
 
