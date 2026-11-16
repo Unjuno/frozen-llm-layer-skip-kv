@@ -4,7 +4,7 @@
 
 ## 研究の問い
 
-**凍結済みLLMの第1層後の特徴だけから、中間Transformer層すべてのON/OFFをトークンごとに一括決定し、実際の文章生成の報酬でLinear Routerを学習する。これに、スキップ層の遅延KV補完を結合することで、元モデルの品質を維持または改善しつつ、実GPU生成時間を短縮できるか。**
+**凍結済みLLMの第1層Attention計算で得た活性を通常のLLM経路とLinear Headで共有し、中間Transformer層すべてのON/OFFをトークンごとに一括決定し、実際の文章生成の報酬でLinear Headを学習する。これに、スキップ層の遅延KV補完を結合することで、元モデルの品質を維持または改善しつつ、実GPU生成時間を短縮できるか。**
 
 ### 達成したいこと
 
@@ -30,7 +30,8 @@
 ## 確定仕様（変えない骨格）
 
 - **全重み凍結：** Embedding・全Transformer層・LM Headは更新しない。学習するモデルパラメータはLinear Routerだけ。
-- **第1・最終層は必ず実行。**
+- **第1・最終層は必ず実行。** 第1層はAttentionだけで終えず、後続MLPまで完了させて中間層に渡す。
+- **活性の再利用：** 第1層のSelf-AttentionをRouter専用に重複実行せず、計算済み活性を**通常LLM経路とLinear Headで共有**する。Tap位置（Attention残差加算前／後など）は[11 活性共有・実行領域Head](11_SHARED_ACTIVATION_ROUTING.md)で区別する。
 - **Routerは1トークンにつき1回、全中間層のON/OFFをまとめて出力する。** 各中間層に個別の判定ヘッドを配置するわけではない。
 - Routerは層間の隠れ状態を直列変換する層ではなく、**計算経路の制御器**。
 - 学習時は**ランダムな組み合わせで実際に自己回帰生成**し、全経路の品質・費用の報酬からRouterを更新する。単純な教師モデル一致だけを最適化しない。
@@ -42,17 +43,20 @@
 
 ```mermaid
 flowchart TD
-    A[入力トークンと文脈] --> B[Embedding / 第1 Transformer層<br/>必ず実行・凍結]
-    B --> C[Linear Router<br/>唯一の学習対象]
-    C --> D[中間層すべてのON/OFFマスクを一括選択]
+    A[入力トークンと文脈] --> B[Embedding / 第1層Self-Attention<br/>通常の計算を1回だけ実行]
+    B --> S[既存Attention活性を2経路で共有]
+    S --> C[Linear Head<br/>唯一の学習対象]
+    S --> F1[第1層の残りの処理<br/>MLPまで完了・凍結]
+    C --> D[全中間層のON/OFFマスクを一括選択]
     D --> E[Layer Executor<br/>中間層を順番に実行または迂回]
-    D --> F[KV Scheduler<br/>必要なKVの保存・遅延補完]
-    F -. 必要な過去KVを提供 .-> E
+    F1 --> E
+    D --> K[KV Scheduler<br/>必要なKVの保存・遅延補完]
+    K -. 必要な過去KVを提供 .-> E
     E --> G[最終Transformer層<br/>必ず実行・凍結]
     G --> H[既存LM Head → 次トークン]
 ```
 
-図は論理関係。Schedulerは**層実行中**に参照され、単純に最終層の後で起動する処理ではない。
+図は論理関係。**Linear Headが第1Attention活性を参照しても、Layer Executorは第1層MLPまで終えた隠れ状態を受け取る**。Schedulerは**層実行中**に参照され、単純に最終層の後で起動する処理ではない。
 
 ### 5層の具体例
 
@@ -62,7 +66,7 @@ flowchart TD
 
 ### なぜ必要か
 
-現行のLinear Routerは第1層後の特徴だけから現在のマスクを一括予測する。ところが、**同じ特徴から予測したとしても、過去にスキップした層のKVが準備済みか、未補完かによって、次にその層を実行する実際の費用は違う**。
+Linear Headは第1層Attentionまでで得た**共有活性**から現在のマスクを一括予測する（Tap位置は[11](11_SHARED_ACTIVATION_ROUTING.md)で区別）。ところが、**同じ特徴から予測したとしても、過去にスキップした層のKVが準備済みか、未補完かによって、次にその層を実行する実際の費用は違う**。
 
 そこでモデル本体・Routerの構造を変えずに、**KV補完負債（KV reconstruction debt）をGPU費用上の状態として定義する**ことを提案する。これは「保存したデータ量」だけではなく、「次にその層を実行するときに要求される再構成と待機」を含む概念。
 
@@ -70,7 +74,7 @@ flowchart TD
 
 | 要素 | やること | やらないこと |
 |---|---|---|
-| **Linear Router** | 第1層出力から、全中間層のON/OFF候補を1回で出す | 新しいTransformer表現を作らない |
+| **Linear Router** | 第1層Attentionの既存活性を共有して全中間層のON/OFFを1回で出す | 2回目のAttentionや別のLLMを実行しない |
 | **Layer Executor** | 選択済みマスクに従い、層を順番に実行／スキップする | 勝手にマスクを変更しない |
 | **KV Scheduler** | Eager、保存、必要時の再構成、一括補完、メモリ予算を管理する | **Routerの実行マスクを無断で上書きしない** |
 | **費用の評価** | 経路の品質・現在の計算費用・将来の補完費用を評価する | 層スキップ率だけを速度の代用にしない |
@@ -88,7 +92,7 @@ Schedulerの判断で保存領域が足りなければ、**マスクを書き換
 | \(t\) | Decode位置 | 1 | 正整数 | 整数 |
 | \(j\) | 中間Transformer層 | 1 | 2〜L−1 | 整数 |
 | \(L\) | Transformer層数 | 1 | 28または52 | 整数 |
-| \(h_t\) | 第1層出力 | 1 | \(\mathbb R^d\) | ベクトル |
+| \(h_t\) | Linear Headが参照する第1層の**共有活性**（候補AはAttention残差後、候補Bは第1Block完了後） | 1 | \(\mathbb R^d\)、厳密なTapは[11](11_SHARED_ACTIVATION_ROUTING.md)参照 | ベクトル |
 | \(d\) | 隠れ幅 | 1 | 対象モデルのconfigで固定 | 整数 |
 | \(W_j,b_j\) | Linear Routerの第j層用行重み・bias | 1 | \(W_j\in\mathbb R^{1\times d}, b_j\in\mathbb R\) | 行ベクトル・スカラー |
 | \(D_t\) | 当該時点のKV準備状況・共有保存状態・未補完負債 | 1 | 層・トークン単位の状態集合 | 離散状態 |
