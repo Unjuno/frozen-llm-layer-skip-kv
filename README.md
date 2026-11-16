@@ -8,7 +8,8 @@
 ## 何を研究するか
 
 - **重みは変更しない：** Embedding・全Transformer層・LM Headは凍結。学習対象は**Linear Routerのみ**。
-- **中間層を選ぶ：** 第1・最終Transformer層は必ず実行。第1層後の特徴から**中間層すべてのON/OFFをトークンごとに一括選択**する。
+- **第1Attention活性を共有：** 第1Transformer層の既存Self-Attentionで計算した活性をLLM本体とLinear Headが共有し、**Router用のAttentionを別途実行しない**。第1層はMLPまで必ず完了する。
+- **中間層の実行領域を学習：** 第1・最終Transformer層は必ず実行。共有活性からLinear Headが**中間層すべてのON/OFFをトークンごとに一括選択**する。
 - **生成しながら学習：** ランダムな実行マスクを使って実際に文章生成し、品質と推論費用からRouterを更新する。
 - **元モデルを上回る可能性も評価：** 元モデルの模倣だけではなく、層スキップによる正解率改善も検証する。
 - **KVを必要に応じて補完：** スキップした層の入力を保持し、Eager / On-demand / Batched / Shared Lazy / Adaptiveを比較する。
