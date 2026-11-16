@@ -1,41 +1,31 @@
-# Research Protocol — 研究方法の入口
+# Research Protocol｜研究方法の入口
 
-> **文書再編について：** 以前このファイルに集約されていた研究仕様は、**目的・学習・KV・評価・進行判定**に分割しました。長い文書を再び重複させず、各専門文書を唯一の正本とします。
+> **現在は設計のみ**。研究コード、学習・GPU実験、結果、期限は設定しない。研究目的と厳密な計算の共有範囲は[01](01_FOUNDATIONS.md)・[11](11_SHARED_ACTIVATION_ROUTING.md)が正本。
 
-## この研究は何をするのか
+## 何をする研究か
 
-**重みをすべて凍結したLLM**で、第1層Attentionの既存活性をLLM本体と共有する**単一のLinear Head**が、トークンごとに中間層すべてのON/OFFを出力する。第1層はMLPまで完了し、別のAttentionを実行しない。ランダム探索による**実際の自己回帰生成**でRouterを学習し、元モデルの品質維持だけでなく品質改善も検証する。さらに**スキップ層KVの遅延・一括補完と実行経路の共同最適化**によって、実GPU時間が短縮するかを確かめる。
+既存LLMの**第1層Self-Attentionで計算済みの活性を再利用**し、**一つのLinear Head**がトークンごとに**中間層すべてのON/OFF（実行領域）**を一括選択する。LLMのEmbedding・全Transformer・LM Headは凍結し、Headだけを**実際の生成報酬**から学習する。第1層はMLPまで実行し、最終層も必ず実行する。
 
-Qwen3-0.6Bで原理・正確性を確認してからNanbeige4.3-33Bで検証する。第1・最終層は必ず実行、LLM本体は全重み凍結、3B/7B中間モデルなし、**期限なし**。
+中間層のSkipによって欠けたKVは必要時に正しく補完する。このKV補完とGPU費用の最適化は、上記の**動的経路学習を支える派生課題**であり、主題を置き換えない。
 
-## 目的別の参照先（正本）
+## 目的別の参照先
 
-| 読みたいこと | 正本文書 |
+| 対象 | 正本文書 |
 |---|---|
-| 研究目的・確定仕様・全体構造 | [01 研究の骨格](01_FOUNDATIONS.md) |
-| Linear Routerの数式・全層マスク学習・REINFORCE・探索 | [02 Routerの学習](02_ROUTER_TRAINING.md) |
-| 第1Attention活性の共有・第1層MLPとの依存関係・Tap候補 | [11 共有活性とLinear Head](11_SHARED_ACTIVATION_ROUTING.md) |
-| Eager/On-demand/Batched/Shared Lazy/AdaptiveとKV正確性 | [03 KV補完](03_KV_CACHE.md) |
-| H1〜H4・A0〜D2・GPU測定・統計判定・再現性 | [04 実験設計](04_EVALUATION.md) |
-| G0〜G8・現在地・未決事項・次の検証条件 | [05 検証ゲート](05_GATES.md) |
-| どこを最適化対象として絞るか（提案） | [06 最適化対象](06_OPTIMIZATION_TARGETS.md) |
-| どの学習方策で最適化するか（提案） | [07 方策学習パイプライン](07_POLICY_LEARNING_PIPELINE.md) |
-| 将来の初回KV需要・一括補完・保存コストの設計（提案） | [08 初回KV需要のモデル](08_KV_FIRST_USE_MODEL.md) |
-| 最終ON位置から必要KV個数を導く（条件付き数学命題） | [09 最終ON位置とKV射影](09_LAST_USE_BOUND.md) |
-| 既知技術と独自性候補の区別（設計監査） | [10 新規性と合理性](10_NOVELTY_AND_RATIONALITY.md) |
-| 何が確定、何が提案か、変更の根拠 | [設計判断ログ](DECISIONS.md) |
-| 先行研究の何を参照・採用候補にしたか | [先行研究・技術的出典台帳](PRIOR_ART_AND_ATTRIBUTION.md) |
-| `main`への直接コミットなどのGitHub方針 | [運用規約](REPOSITORY_POLICY.md) |
+| **研究の確定仕様と目的** | [01 研究の骨格](01_FOUNDATIONS.md) |
+| **第1Attentionの活性再利用・Linear Headの位置** | [11 共有活性の仕様](11_SHARED_ACTIVATION_ROUTING.md) |
+| **Linear Headの生成中学習** | [02 学習方法](02_ROUTER_TRAINING.md) |
+| 中間層の欠損KVの正確な補完 | [03 KV Cache](03_KV_CACHE.md) |
+| 学習方策・任意の費用拡張 | [07 学習候補](07_POLICY_LEARNING_PIPELINE.md) |
+| 評価の対照設計 | [04 比較方針](04_EVALUATION.md) |
+| **KV費用などの補助分析** | [06](06_OPTIMIZATION_TARGETS.md)・[08](08_KV_FIRST_USE_MODEL.md)・[09](09_LAST_USE_BOUND.md) |
+| 既知技術との境界 | [10 新規性監査](10_NOVELTY_AND_RATIONALITY.md)・[出典台帳](PRIOR_ART_AND_ATTRIBUTION.md) |
+| 将来の検証ゲート、決定履歴、運用 | [05](05_GATES.md)・[判断ログ](DECISIONS.md)・[運用](REPOSITORY_POLICY.md) |
 
-[文書ガイド](README.md)では、実験に着手したときの更新先も説明します。
+## 運用上の注意
 
-## 判断の原則
-
-- **確定仕様／実装候補／反証可能な仮説／未決事項／検証済みの結果**を混同しない。
-- 元モデルとの出力一致は補助比較であり、タスク品質改善の可能性を排除しない。
-- KV方式の比較には**同じマスク・トークンのReplay**を使う。
-- H3は**Schedulerの単純後付け**と**費用を考慮したRouter再学習**を比較する。
-- スキップ層数だけでなく、**GPU実測と品質制約**をもって結論を出す。
-- 検証できていない高速化・品質改善・新規性を成果として書かない。
-
-**更新先は個別の正本文書です。** この入口ファイルは、古いURLからの参照を維持するために残します。
+- **単一Linear Headが中間層全体のON/OFFを選ぶ。** 別のAttention、別の学習可能なDecision Modelを足さない。
+- Attention重みとAttention出力活性を混同しない。厳密なTap位置は未決で、勝手に確定しない。
+- **同じ層をSkipし続けることを学習目標にしない。** 固定SkipはBaseline。
+- 数理解析、推論、実装、実測、学術的新規性の確定を混同しない。
+- [文書ガイド](README.md)から現在の正本へ進む。
