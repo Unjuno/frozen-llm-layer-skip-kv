@@ -22,7 +22,7 @@
 
 ## 第1層AttentionとKVの共有範囲
 
-**第1層は必ず実行し、通常のLLM経路でSelf-Attentionと第1層KVを一度だけ生成・再利用する。** Linear Headが第1Attentionの既存活性を読み取るために第1層AttentionやKV射影を重複実行しない。**中間層をSkipした結果生じる欠損KV**についてのみ、本書のEager／Lazy補完を議論する。第1層MLPは必ず完了し、その完全な第1Block出力を中間層Executorへ渡す。[11 共有活性とLinear Head](11_SHARED_ACTIVATION_ROUTING.md)を参照。
+**第1層は必ず実行し、通常のLLM経路でSelf-Attentionと第1層KVを一度だけ生成・再利用する。** Linear Headが第1Attentionの既存活性を読み取るために第1層AttentionやKV射影を重複実行しない。**これは最初からの設計条件であり、元モデルと比較した高速化実績ではない。****中間層をSkipした結果生じる欠損KV**についてのみ、本書のEager／Lazy補完を議論する。第1層MLPは必ず完了し、その完全な第1Block出力を中間層Executorへ渡す。[11 共有活性とLinear Head](11_SHARED_ACTIVATION_ROUTING.md)を参照。
 
 ## 正確性の不変条件
 
