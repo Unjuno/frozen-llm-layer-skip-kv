@@ -27,6 +27,9 @@
 | R-001 | 2026-11-16 | **撤回（設計修正）** | [10](10_NOVELTY_AND_RATIONALITY.md)で提案していた**「前回マスクを維持する非学習バイアス」**を候補から撤回。連続して同じ層をSkipすること自体の奨励は静的Layer Pruningへの退化を招き、トークン別の動的選択の価値を損なう。連続OFF長・最終ON位置は解析にのみ使う。**入力に適応した結果として同じマスクになることは許す** | [10](10_NOVELTY_AND_RATIONALITY.md), [09](09_LAST_USE_BOUND.md) |
 | P-010 | 2026-11-16 | **比較設計の改善・未検証** | 動的Routerの価値を主張するため、開発セットで選んだ**最良固定マスク**と、同一費用条件の品質・GPU時間を比較。マスクの変化率・一致率は診断にのみ使い、変化を無理に強制しない | [04](04_EVALUATION.md) |
 
+| D-006 | 2026-11-16 | **確定する設計意図** | **第1層Self-Attentionの計算済み活性を、通常LLM経路と単一Linear Headで共有し、Router専用のAttentionを二重に計算しない**。第1/最終層は常時ONで、第1層MLPは必ず完了する。**全中間層ON/OFFを学習する**骨格は不変。過去のD-002の「第1層後」という表現は、Headの正確なTap位置を確定した意味ではない | [11](11_SHARED_ACTIVATION_ROUTING.md) |
+| P-011 | 2026-11-16 | **Tap候補・未確定** | Headに入力する共有活性は、第1Attentionの残差加算後を第一候補（A）、第1Block完了後を比較候補（B）とする。残差加算前のAttention出力も別候補。**Attention活性≠Attention重み≠第1Block出力**を区別し、実装・学習・GPU性能は未検証 | [11](11_SHARED_ACTIVATION_ROUTING.md) |
+
 ### 変更記録のひな型
 
 ```markdown
