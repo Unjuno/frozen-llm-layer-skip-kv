@@ -66,6 +66,8 @@ Qwen3の一般的なDecoder Blockは**第1正規化 → Attention → 残差加�
 | \(\mathcal N_F\) | 第1層MLP前の正規化（固定重み） | 1 | \(\mathbb R^d\to\mathbb R^d\) | 写像 |
 | \(\mathcal M_1\) | 第1層MLP（固定重み） | 1 | \(\mathbb R^d\to\mathbb R^d\) | 写像 |
 | \(h_t^{(1)}\) | 第1Transformer Blockの完全な出力 | 1 | \(\mathbb R^d\) | ベクトル |
+| \(\theta\) | Linear Headの唯一の学習可能なパラメータ組 | 1 | \((W,b)\) | パラメータ組 |
+| \(\pi_\theta\) | Headが選ぶ全中間層のマスク確率分布 | 1 | \(\{0,1\}^{L-2}\)上の分布、学習時の探索方式に依存 | 確率分布 |
 | \(W\) | Linear Headの重み | 1 | \(\mathbb R^{(L-2)\times d}\) | 行列 |
 | \(b\) | Linear Headのバイアス | 1 | \(\mathbb R^{L-2}\) | ベクトル |
 | \(p_t\) | 中間全層のON確率 | 1 | \((0,1)^{L-2}\) | 確率ベクトル |
