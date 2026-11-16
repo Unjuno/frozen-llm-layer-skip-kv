@@ -8,6 +8,7 @@
 - [文書ガイド](README.md)：読む順番・編集先の索引。
 - [01 骨格](01_FOUNDATIONS.md)：研究目的、確定仕様、モデル構造。
 - [02 Router学習](02_ROUTER_TRAINING.md)：学習方法・数式・探索。
+- [11 第1Attention共有](11_SHARED_ACTIVATION_ROUTING.md)：既存Attention活性の再利用、Linear Headとの分岐点、Tap未決事項。
 - [03 KV補完](03_KV_CACHE.md)：保存、復元、GPUメモリ、不変条件。
 - [04 実験評価](04_EVALUATION.md)：アブレーション、H/T/D/C/U、測定条件。
 - [05 検証ゲート](05_GATES.md)：段階移行、現状、未決事項。
