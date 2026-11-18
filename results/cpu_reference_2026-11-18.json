@@ -1,0 +1,301 @@
+{
+  "description": "CPU synthetic frozen 5-layer GQA-like decoder correctness experiment; NOT pretrained Qwen3",
+  "date_utc": "2026-11-18",
+  "environment": {
+    "os": "Linux-6.18.57-x86_64-with-glibc2.41",
+    "python": "3.13.5",
+    "torch": "2.10.0+cpu",
+    "gpu_available": false,
+    "device": "CPU",
+    "threads": 1,
+    "dtype": "torch.float64",
+    "seed_model": 20261118,
+    "seed_masks": 444,
+    "seed_router": 37
+  },
+  "synthetic_architecture": {
+    "layers": 5,
+    "hidden_size": 16,
+    "q_heads": 4,
+    "kv_heads": 2,
+    "head_dim": 4,
+    "vocab": 29,
+    "first_and_last_always_executed": true
+  },
+  "tests": {
+    "native_vs_masked_all_on": {
+      "status": "PASS",
+      "max_abs_logits": 0,
+      "max_abs_first_attention_tap": 0,
+      "first_attention_calls": 8,
+      "router_consumptions": 8,
+      "first_mlp_calls_native_plus_masked": 16
+    },
+    "negative_control_wrong_kv_position": {
+      "status": "PASS",
+      "max_abs_logits_when_position_corrupted": 0.022582990305631767,
+      "expected_difference_detected": true
+    },
+    "fixed_replay_eager_vs_lazy": {
+      "status": "PASS",
+      "cases": [
+        {
+          "case": "alternating",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 39,
+          "avoided_kv_pairs": 1,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "all_middle_off",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 16,
+          "avoided_kv_pairs": 24,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "off_then_resume",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 40,
+          "avoided_kv_pairs": 0,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "mixed",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 37,
+          "avoided_kv_pairs": 3,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "all_on",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 40,
+          "avoided_kv_pairs": 0,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_00",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 37,
+          "avoided_kv_pairs": 3,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_01",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 34,
+          "avoided_kv_pairs": 6,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_02",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 36,
+          "avoided_kv_pairs": 4,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_03",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 38,
+          "avoided_kv_pairs": 2,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_04",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 36,
+          "avoided_kv_pairs": 4,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_05",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 36,
+          "avoided_kv_pairs": 4,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_06",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 38,
+          "avoided_kv_pairs": 2,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_07",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 36,
+          "avoided_kv_pairs": 4,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_08",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 34,
+          "avoided_kv_pairs": 6,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_09",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 32,
+          "avoided_kv_pairs": 8,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_10",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 38,
+          "avoided_kv_pairs": 2,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_11",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 40,
+          "avoided_kv_pairs": 0,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_12",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 38,
+          "avoided_kv_pairs": 2,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_13",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 36,
+          "avoided_kv_pairs": 4,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_14",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 34,
+          "avoided_kv_pairs": 6,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_15",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 39,
+          "avoided_kv_pairs": 1,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_16",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 39,
+          "avoided_kv_pairs": 1,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_17",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 29,
+          "avoided_kv_pairs": 11,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_18",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 36,
+          "avoided_kv_pairs": 4,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_19",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 38,
+          "avoided_kv_pairs": 2,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_20",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 37,
+          "avoided_kv_pairs": 3,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_21",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 35,
+          "avoided_kv_pairs": 5,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_22",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 40,
+          "avoided_kv_pairs": 0,
+          "first_attention_calls_each": 8
+        },
+        {
+          "case": "random_23",
+          "max_abs_logits": 0,
+          "eager_kv_pairs": 40,
+          "lazy_kv_pairs": 37,
+          "avoided_kv_pairs": 3,
+          "first_attention_calls_each": 8
+        }
+      ],
+      "tolerance_max_abs": 1e-12
+    },
+    "head_only_reinforce_gradient": {
+      "status": "PASS",
+      "rollouts": 6,
+      "synthetic_correct_count": 0,
+      "gradient_norm": 0.01702735675436272,
+      "max_head_weight_change": 0.00034620298151419315,
+      "frozen_model_sha256_unchanged": true,
+      "rewards": [
+        -0.038,
+        -0.04,
+        -0.03,
+        -0.046,
+        -0.04,
+        -0.034
+      ]
+    }
+  },
+  "limitations": [
+    "No actual pretrained Qwen3 checkpoint, tokenizer or generation benchmarks",
+    "No CUDA; GPU latency / VRAM / speedup not measured",
+    "Synthetic RoPE-like rotation, architecture not numerically identical to Qwen3",
+    "Only 8-token fixed replay sequences and one synthetic policy-gradient step",
+    "No meaningful task-quality or model-improvement claim"
+  ]
+}
