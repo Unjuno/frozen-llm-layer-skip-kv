@@ -65,6 +65,7 @@
 - **未検証：** **Qwen3-0.6Bの実重み**、Qwen3固有のRMSNorm/QK norm/RoPE、実モデルの全ON Logits、BF16の丸め差、GPU上のGather/Scatter・CUDA同期・VRAM・Latency、未知問題の品質、Nanbeige4.3-33B。
 - **重要な前提：** 合成Decoderは自作コード内部のNativeとMaskedを比較している。**Transformersの独立実装を比較してはいない**。
 - **速度の結論：** GPUが利用できなかったため、**Speedupは「未測定」**。0%や高速化成功とするのは誤り。
+- **実行順序上の限界：** CPU参照コードは第1BlockのMLPまで計算し、返されたAttention残差後TapをLinear Headが読む。**Headの判定と第1層MLPを並行実行した実証ではない**。共有値の正確性と、実GPUスケジューリング上の重なりは別課題。
 
 ## 保存先と再現手順
 
