@@ -1,6 +1,6 @@
 # Research Protocol｜研究方法の入口
 
-> **現在は設計のみ**。研究コード、学習・GPU実験、結果、期限は設定しない。研究目的と厳密な計算の共有範囲は[01](01_FOUNDATIONS.md)・[11](11_SHARED_ACTIVATION_ROUTING.md)が正本。
+> **現在は研究設計＋CPU合成モデルの正確性Pilotまで実施済み。** Qwen3実モデル・GPU実験は未実施、期限は設定しない。実行結果：[12 CPU Pilot](12_CPU_CORRECTNESS_PILOT.md)。研究目的の正本は[01](01_FOUNDATIONS.md)・[11](11_SHARED_ACTIVATION_ROUTING.md)。
 
 ## 何をする研究か
 
