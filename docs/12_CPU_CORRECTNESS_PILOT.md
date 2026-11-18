@@ -36,7 +36,7 @@
 | CPU-02 | 共有による第1Attentionの二重実行がないか | 8トークンに対して第1Attention呼出し**8回**。Router側のTap読取り8回 | **PASS** |
 | CPU-03 | 第1層MLPをスキップしていないか | Native全ON＋Masked全ONの計16トークン処理で第1層MLP呼出し**16回** | **PASS** |
 | CPU-04 | EagerとLazyの固定トークン・マスクReplay | **29マスク列すべてLogitsの最大差0.0** | **PASS** |
-| CPU-05 | 位置を誤って補完した場合の負の対照 | 意図的に位置を1ずらすとLogits最大差**0.022582990305631767** | **PASS：差を検出** |
+| CPU-05 | 位置を誤って補完した場合の負の対照 | **Deferred KVの補完位置だけ**意図的に1ずらすとLogits最大差**0.021333182293028385** | **PASS：差を検出** |
 | CPU-06 | REINFORCEでLinear Headのみ更新できるか | 6独立Rollout、Weight gradient norm **0.01702735675436272**、重み最大変化**0.00034620298151419315**。凍結モデルのSHA256は更新前後で一致 | **PASS** |
 
 ### KVの計算個数（固定Replayの代表例）
