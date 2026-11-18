@@ -33,7 +33,7 @@
     },
     "negative_control_wrong_kv_position": {
       "status": "PASS",
-      "max_abs_logits_when_position_corrupted": 0.022582990305631767,
+      "max_abs_logits_when_position_corrupted": 0.021333182293028385,
       "expected_difference_detected": true
     },
     "fixed_replay_eager_vs_lazy": {
