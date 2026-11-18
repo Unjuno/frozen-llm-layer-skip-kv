@@ -13,6 +13,11 @@
 | 5 | [07 方策学習の候補](07_POLICY_LEARNING_PIPELINE.md) | REINFORCE、RLOO、後段のGPU費用認識候補 |
 | 6 | [04 比較方針](04_EVALUATION.md) | 動的Router、固定Skip、KV方式を区別する評価設計 |
 
+## 実際に実施した参照実験
+
+- [12 CPU正確性Pilot](12_CPU_CORRECTNESS_PILOT.md)：**実行済み**。小型合成Decoderで共有Tap、全ON、KV補完、Headだけの勾配を確認。Qwen3の正確性やGPU速度を示すものではない。
+- [CPU実行コード](../experiments/cpu_reference/run_cpu_reference.py)／[CPUの生結果JSON](../results/cpu_reference_2026-11-18.json)を公開。
+
 ## 補助資料・新規性の検討
 
 | 文書 | 位置付け |
