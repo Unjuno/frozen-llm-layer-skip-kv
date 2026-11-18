@@ -252,7 +252,8 @@ def run():
     # must fail the same-logits criterion, proving the test can catch bad RoPE.
     original_projector = model.layers[1].kv_from_state
     def incorrect_kv_position(state, pos):
-        return original_projector(state, pos + 1)
+        # Only corrupt deferred positions 0..5; current 6..7 remain correct.
+        return original_projector(state, pos + 1 if pos < 6 else pos)
     try:
         model.layers[1].kv_from_state = incorrect_kv_position
         wrong_logits, _, _ = fixed_replay(
