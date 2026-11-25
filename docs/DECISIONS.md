@@ -37,6 +37,8 @@
 | D-009 | 2026-11-25 | **実験準備：コード作成済み、統合未実行** | 第1Attention活性のフック共有、全中間層の一括Linear Mask、Eager Project-Only、Lazy補完、実モデル・合成Qwen3用のCLI、RLOO Pilot、固定Maskとの開発比較を追加。**本体の第1層MLP・最終層は常時実行**。確定したアルゴリズムを変更せず、`Transformers==4.57.3`に実装を限定。**実際のQwen3数値一致・GPU性能・品質改善は未測定** | [13](13_EXPERIMENT_RUNBOOK.md), [11](11_SHARED_ACTIVATION_ROUTING.md) |
 | P-012 | 2026-11-25 | **参考・適用未検証** | OpenAIの2026-11-24プレプリント`ω=9/4`を出典台帳RW-17に記載。理論的な**平方行列**の漸近指数を長方形KV射影のGPU実測速度と同一視せず、まずGEMV／一括GEMM／K/V統合GEMMのMicrobenchmarkを実行可能にする。**論文のアルゴリズムは実装していない** | [RW-17](PRIOR_ART_AND_ATTRIBUTION.md), [13](13_EXPERIMENT_RUNBOOK.md) |
 
+| D-010 | 2026-11-25 | **CPU初回検証PASS／GPU・学習未検証** | 一括実行スクリプトを追加し、smoke全4工程終了コード0。公式小型Qwen3で13テストPASS、実Qwen3-0.6BでFP32・1プロンプト・2 Decode位置・6マスク列の最大Logits差0。post-residualは既存活性を直接参照。Head学習で更新ゼロなら停止しcheckpointを作らない。複数トークン回答データ・初期ON率0.95は試験用。学習の成果、BF16/CUDA、長系列、GPU速度は未検証 | [13](13_EXPERIMENT_RUNBOOK.md)／[実測](../results/qwen3_real_cpu_fp32_2026-11-25.json)／[manifest](../results/qwen3_one_command_smoke_2026-11-25.json) |
+
 ### 変更記録のひな型
 
 ```markdown
