@@ -3,7 +3,7 @@
 > **状態：実験実行に必要な最小コードとCLIをリポジトリへ追加済み。**
 > **2026-11-25のCPU統合検証：** 接続先Linux aarch64、Python 3.12.3、PyTorch 2.8.0+cpu、Transformers 4.57.3、FP32、1スレッドで、公式Qwen3クラスの小型ランダム初期化モデルを使い**13テストPASS**。pre/post-residualの両方で6ケースのEager/Lazy一致、全ON差0.0。結果は[実測JSON](../results/qwen3_synthetic_cpu_2026-11-25.json)。**事前学習済み重みによる品質・GPU速度の証拠ではない。**
 >
-> 実験はユーザーからの「実験可能にしてほしい」という指示に基づいて実装した。自動的な有料GPUジョブは起動していない。
+> **事前学習済みQwen3-0.6Bの初回CPU検証もPASS。** 固定revision、FP32、Batch1、1プロンプト・2 Decode位置、post-residual、6マスク列で全ONおよびEager/Lazyの最大Logits差0。 [実測JSONと実行コマンド](../results/qwen3_real_cpu_fp32_2026-11-25.json)。長系列、BF16/CUDA、品質は未検証。自動的な有料GPUジョブは起動していない。
 
 ## 0. 最短の実験起動
 
@@ -192,6 +192,6 @@ python experiments/qwen3/bench_kv_projection.py \
 | **C** | RoPE位置ずれ、Qwen3のK正規化誤り、Cache更新順、マスク間相互作用、Routerの低表現力、CPU同期、品質報酬の全ゼロ |
 | **U** | FP32/BF16丸め、GEMMの順序、Backend、GPU Clock、Kernel選択、Rollout Seed、評価データ。Pilotの誤差を無条件に他環境へ流用しない |
 
-**ERROR CHECK：** 本資料は実行可能なコードと合否基準を用意するものであり、実モデルで実行した結果ではない。先に報告されたCPU Pilotと区別する。実機でのSUCCESS/FAILを記録してから研究成果を判断する。
+**ERROR CHECK：** 小型モデルと実重みの短いCPU数値検証の実測は上記JSONで確認できる。本資料のGPU・学習・品質評価のコマンドは準備済みだが未実行。短い固定ReplayのPASSを学習成功・速度向上・長系列の一般的な正確性と混同しない。
 
 [研究の骨格](01_FOUNDATIONS.md)｜[共有活性](11_SHARED_ACTIVATION_ROUTING.md)｜[実行コード](../experiments/qwen3/run.py)｜[最適化の評価](04_EVALUATION.md)
