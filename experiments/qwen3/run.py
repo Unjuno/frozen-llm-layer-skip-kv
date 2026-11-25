@@ -175,8 +175,7 @@ def run_fixed(model, prompt, tokens, masks=None, mode="eager",
                     out = model(input_ids=torch.tensor([[token]], device=prompt.device),
                                 past_key_values=cache, use_cache=True, logits_to_keep=1)
                     if not measure:
-                        if not measure:
-                            outs.append(out.logits[:, -1, :].detach().float().cpu())
+                        outs.append(out.logits[:, -1, :].detach().float().cpu())
                 stats = {}
             else:
                 outs = []
@@ -186,7 +185,8 @@ def run_fixed(model, prompt, tokens, masks=None, mode="eager",
                         out = model(input_ids=torch.tensor([[token]], device=prompt.device),
                                     past_key_values=cache, use_cache=True, logits_to_keep=1)
                         router.end_decode()
-                        outs.append(out.logits[:, -1, :].detach().float().cpu())
+                        if not measure:
+                            outs.append(out.logits[:, -1, :].detach().float().cpu())
                 stats = router.stats_dict()
             sync(prompt.device)
             seconds = time.perf_counter() - started
