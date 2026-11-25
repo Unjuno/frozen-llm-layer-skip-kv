@@ -56,7 +56,8 @@ python experiments/qwen3/run.py verify --model synthetic --device cpu --dtype fl
 
 ## 現在の状態
 
-- **設計資料の整理：** 継続中。数学的な候補は「未確定」として分離。
+- **設計資料の整理・試験コード：** 参照実行器・学習CLI・GPU測定CLI・依存関係・小型テストを追加。**新コードの統合実行は未確認**。
+- **数学的な仮説：** 未確定と明示して分離。
 - **CPUの合成モデル参照実験：** [初回正確性結果](docs/12_CPU_CORRECTNESS_PILOT.md)を取得済み。**Qwen3実モデルの結果ではない**。29種類のマスクでEager/LazyのLogits差0、位置誤りの負の対照も検出。
 - **Qwen3/Nanbeigeの実モデル学習・GPU測定：未実施**。実測した高速化・品質改善・学術的新規性は主張しない。
 - **活性を読み取る厳密なTensor位置：** Attention出力射影の前後、残差加算の前後などを混同しない。[11](docs/11_SHARED_ACTIVATION_ROUTING.md)で**未決**として管理する。
