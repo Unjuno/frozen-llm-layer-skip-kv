@@ -73,6 +73,9 @@ python scripts/run_pilot.py --stage pilot --device cuda
 
 ## 現在の状態
 
+- **一括実行の起動確認：** `python scripts/run_pilot.py --stage smoke --device cpu` の全4工程が終了コード0（[実行manifest](results/qwen3_one_command_smoke_2026-11-25.json)）。CPU環境の実測依存バージョンは[制約ファイル](requirements/cpu-tested.txt)。GPU環境は別途構築する。
+
+
 - **Qwen3構造のCPU統合試験：** 公式クラスをランダム初期化した4層・隠れ幅64のモデルで13テストPASS。Tap両候補の全ON・Eager/Lazy比較がPASS（[結果](results/qwen3_synthetic_cpu_2026-11-25.json)）。
 - **数学的な仮説：** 未確定と明示して分離。
 - **CPUの合成モデル参照実験：** [初回正確性結果](docs/12_CPU_CORRECTNESS_PILOT.md)を取得済み。**Qwen3実モデルの結果ではない**。29種類のマスクでEager/LazyのLogits差0、位置誤りの負の対照も検出。
