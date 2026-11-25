@@ -13,6 +13,12 @@
 | 5 | [07 方策学習の候補](07_POLICY_LEARNING_PIPELINE.md) | REINFORCE、RLOO、後段のGPU費用認識候補 |
 | 6 | [04 比較方針](04_EVALUATION.md) | 動的Router、固定Skip、KV方式を区別する評価設計 |
 
+## Qwen3で新たに実験するためのコード
+
+- **[13 Qwen3実験Runbook](13_EXPERIMENT_RUNBOOK.md)**：固定モデルRevision、合成Qwen3検査、実モデルの数値確認、RLOO Pilot、GPU壁時計測定、正方行列理論と実KV GEMMの区別。
+- [Qwen3参照実行器](../src/frozen_skip/qwen3_reference.py)／[verify・bench・train CLI](../experiments/qwen3/run.py)／[KV射影Microbenchmark](../experiments/qwen3/bench_kv_projection.py)。**新コードは未統合実行**。
+- [小型Qwen3構造の検査](../tests/test_qwen3_reference.py)はモデル重みのダウンロード不要。実行後に初めて結果を記録する。
+
 ## 実際に実施した参照実験
 
 - [12 CPU正確性Pilot](12_CPU_CORRECTNESS_PILOT.md)：**実行済み**。小型合成Decoderで共有Tap、全ON、KV補完、Headだけの勾配を確認。Qwen3の正確性やGPU速度を示すものではない。
