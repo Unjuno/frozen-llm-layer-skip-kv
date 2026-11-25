@@ -127,6 +127,24 @@ python experiments/qwen3/run.py train \
 - **学習結果は品質保証ではない**：このデバッグデータだけで未知問題の正解率向上や高速化を主張しない。将来のHoldout評価と最良固定Skipとの同一費用での比較を別に構築する。
 - `data/pilot/dev_arithmetic.jsonl`は参考入力であり、現在のTrain CLIでは**評価未実装**。ここを「テスト済み」と誤表記しない。
 
+### 6.1 開発データでの学習済みHeadの比較（デバッグ用）
+
+学習済みCheckPointがある場合、**実際の自己回帰生成**を使い、元の全層LLM・単純な固定Skip・Headが各Tokenで選ぶ経路を開発データ上で比較する。
+
+```bash
+python experiments/qwen3/evaluate.py \
+  --model Qwen/Qwen3-0.6B --revision "$QWEN_REVISION" \
+  --device cuda --dtype bfloat16 --tap post_residual \
+  --checkpoint checkpoints/qwen3_router_pilot.pt \
+  --dataset data/pilot/dev_arithmetic.jsonl \
+  --max-new-tokens 16 \
+  --output results/qwen3_pilot_dev.json
+```
+
+この`evaluate.py`は**平均ON率・完全一致率・Decode壁時計**を出力する。既存の固定マスク候補は`every_other`と`every_fourth`に限られ、**開発データで最適化した「最良固定マスク」ではない**。答えの長さも各方式で異なるため、時間比較は探索用の説明指標であり、研究の最終判定には用いない。
+
+**品質の改善や非劣性は、独立したHoldoutセット・複数Seed・同じ費用予算・適切な統計検定を実施するまで未実証。**
+
 ## 7. 11月24日の行列乗算論文をどう評価するか
 
 **`ω=9/4`の論文にあるアルゴリズムを使う実装は、現在の実行器に含まれていない。** 理論的な平方行列乗算の指数を、狭いK/V射影GEMMの高速化の保証と解釈しない。
