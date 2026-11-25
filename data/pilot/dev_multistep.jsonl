@@ -1,0 +1,4 @@
+{"prompt":"Return exactly three integer answers separated by single spaces, in this order: 12 + 4; 23 - 5; 7 + 14. No explanation.","answer":"16 18 21"}
+{"prompt":"Return exactly three integer answers separated by single spaces, in this order: 18 - 9; 5 + 14; 22 - 8. No explanation.","answer":"9 19 14"}
+{"prompt":"Return exactly three integer answers separated by single spaces, in this order: 15 + 9; 31 - 6; 8 + 13. No explanation.","answer":"24 25 21"}
+{"prompt":"Return exactly three integer answers separated by single spaces, in this order: 17 - 3; 9 + 12; 28 - 11. No explanation.","answer":"14 21 17"}
