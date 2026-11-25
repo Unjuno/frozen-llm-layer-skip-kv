@@ -20,6 +20,8 @@ python scripts/run_pilot.py --stage pilot --device cuda
 
 学習が更新ゼロなら終了コード3と `NO_EFFECTIVE_UPDATE` を保存し、checkpoint作成および後続評価を停止する。`--stage pilot`は**小規模デバッグ試行**であり、研究の最終検証ではない。
 
+**再現実績：** 一括 `smoke` のpytest・pre/post-residual verify・benchの全4工程が終了コード0。[実行manifest](../results/qwen3_one_command_smoke_2026-11-25.json)。[CPU実測の依存バージョン](../requirements/cpu-tested.txt)はPython 3.12.3／Linux aarch64用の参考制約。CUDA環境にそのまま適用しない。
+
 ## 1. 目的・確定した研究骨格
 
 [01_FOUNDATIONS.md](01_FOUNDATIONS.md)および[11_SHARED_ACTIVATION_ROUTING.md](11_SHARED_ACTIVATION_ROUTING.md)を先に読む。
