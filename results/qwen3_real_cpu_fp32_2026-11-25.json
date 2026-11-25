@@ -1,0 +1,97 @@
+{
+  "source_commit": "4e4c8dede36a8216508143927ef161f6e93c20be",
+  "origin": "actual JSON from connected aarch64 CPU host, not synthetic",
+  "command": "python experiments/qwen3/run.py verify --model Qwen/Qwen3-0.6B --revision c1899de289a04d12100db370d81485cdf75e47ca --device cpu --dtype float32 --decode-steps 2 --tap post_residual --prompt 'What is 3 + 4?' --output results/qwen3_real_cpu_fp32_g1.json",
+  "scope": "single prompt, 2 fixed decode positions, batch 1, FP32, no CUDA; does not establish general correctness, accuracy, or speedup",
+  "result": {
+    "status": "PASS",
+    "environment": {
+      "datetime_utc": "2026-11-25T08:08:39.101005+00:00",
+      "python": "3.12.3",
+      "torch": "2.8.0+cpu",
+      "os": "Linux-7.0.0-1013-oracle-aarch64-with-glibc2.39",
+      "cpu_threads": 1,
+      "cuda_version": null,
+      "transformers": "4.57.3",
+      "model_id": "Qwen/Qwen3-0.6B",
+      "model_revision": "c1899de289a04d12100db370d81485cdf75e47ca",
+      "dtype": "torch.float32",
+      "device": "cpu",
+      "gpu_name": null,
+      "attention_backend": "eager",
+      "batch": 1,
+      "num_layers": 28,
+      "hidden_size": 1024,
+      "seed": 20261125,
+      "decode_steps": 2,
+      "tap": "post_residual",
+      "method": "correctness reference: Python mask branching / no compile"
+    },
+    "native_vs_masked_all_on": {
+      "pass": true,
+      "max_abs_logits": 0,
+      "first_attention_calls": 2,
+      "first_mlp_calls": 3,
+      "head_probe_calls": 2
+    },
+    "first_layer_mlp_pass": true,
+    "eager_vs_lazy_fixed_replay": [
+      {
+        "case": "all_on",
+        "pass": true,
+        "max_abs_logit_diff": 0,
+        "eager_skip_projected": 0,
+        "lazy_reconstructed": 0,
+        "lazy_pending_at_end": 0,
+        "expected_pending": 0
+      },
+      {
+        "case": "all_off",
+        "pass": true,
+        "max_abs_logit_diff": 0,
+        "eager_skip_projected": 52,
+        "lazy_reconstructed": 0,
+        "lazy_pending_at_end": 52,
+        "expected_pending": 52
+      },
+      {
+        "case": "single_skip",
+        "pass": true,
+        "max_abs_logit_diff": 0,
+        "eager_skip_projected": 2,
+        "lazy_reconstructed": 0,
+        "lazy_pending_at_end": 2,
+        "expected_pending": 2
+      },
+      {
+        "case": "alternating",
+        "pass": true,
+        "max_abs_logit_diff": 0,
+        "eager_skip_projected": 26,
+        "lazy_reconstructed": 13,
+        "lazy_pending_at_end": 13,
+        "expected_pending": 13
+      },
+      {
+        "case": "off_then_resume",
+        "pass": true,
+        "max_abs_logit_diff": 0,
+        "eager_skip_projected": 26,
+        "lazy_reconstructed": 26,
+        "lazy_pending_at_end": 0,
+        "expected_pending": 0
+      },
+      {
+        "case": "random",
+        "pass": true,
+        "max_abs_logit_diff": 0,
+        "eager_skip_projected": 19,
+        "lazy_reconstructed": 4,
+        "lazy_pending_at_end": 15,
+        "expected_pending": 15
+      }
+    ],
+    "tolerance": 0.0002,
+    "claim_scope": "numeric replay correctness only: NOT accuracy or GPU speed"
+  }
+}
