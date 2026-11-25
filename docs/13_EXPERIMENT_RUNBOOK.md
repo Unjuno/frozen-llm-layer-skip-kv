@@ -1,9 +1,24 @@
 # 13｜Qwen3-0.6B 実験Runbook（実行手順と合否条件）
 
 > **状態：実験実行に必要な最小コードとCLIをリポジトリへ追加済み。**
-> **重要：本書の新しいQwen3実行器はまだ統合実行できていない。** 現在のコンテナはPyTorch 2.10.0+cpuのみでTransformersが未導入、CUDAなし。2026-11-18の旧[CPU小型合成DecoderのPilot](12_CPU_CORRECTNESS_PILOT.md)は別コードであり、実Qwen3に対するPASSの根拠にはしない。
+> **2026-11-25のCPU統合検証：** 接続先Linux aarch64、Python 3.12.3、PyTorch 2.8.0+cpu、Transformers 4.57.3、FP32、1スレッドで、公式Qwen3クラスの小型ランダム初期化モデルを使い**13テストPASS**。pre/post-residualの両方で6ケースのEager/Lazy一致、全ON差0.0。結果は[実測JSON](../results/qwen3_synthetic_cpu_2026-11-25.json)。**事前学習済み重みによる品質・GPU速度の証拠ではない。**
 >
 > 実験はユーザーからの「実験可能にしてほしい」という指示に基づいて実装した。自動的な有料GPUジョブは起動していない。
+
+## 0. 最短の実験起動
+
+```bash
+python -m pip install -e '.[test]'
+python scripts/run_pilot.py --stage smoke
+# 実モデルの数値正確性だけを検査（GPU環境）
+python scripts/run_pilot.py --stage real --device cuda
+# 正確性がPASSしてからHead学習・開発評価・壁時計計測
+python scripts/run_pilot.py --stage pilot --device cuda
+```
+
+[一括実行スクリプト](../scripts/run_pilot.py)は各段階のコマンド・ログ・終了コードを新しい `runs/` ディレクトリへ保存する。モデルRevision既定値は Hugging Face APIで2026-11-25に確認した `c1899de289a04d12100db370d81485cdf75e47ca`。`--revision`で別の40桁SHAを指定可能。実モデル段階には明示的な `--device` が必要。GPUジョブ契約や課金は行わない。
+
+学習が更新ゼロなら終了コード3と `NO_EFFECTIVE_UPDATE` を保存し、checkpoint作成および後続評価を停止する。`--stage pilot`は**小規模デバッグ試行**であり、研究の最終検証ではない。
 
 ## 1. 目的・確定した研究骨格
 
@@ -22,7 +37,7 @@
 |---|---|
 | モデル | Qwen/Qwen3-0.6B、**実行時に完全なCommit SHAへ固定** |
 | Transformers | **4.57.3** をピン留め |
-| PyTorch | >=2.3,<3、環境に合ったCUDA Wheelを別途用意 |
+| PyTorch | **CPU統合検証は2.8.0+cpu**、環境に合ったCUDA Wheelを別途用意。GPUでは未検証 |
 | Attention | **eager** を強制。FlashAttention、SDPA、torch.compileは初回G1対象外 |
 | Cache | Transformers 4.57.3の **DynamicCache(config=model.config)**。Static/Sliding/Offloadを未サポート |
 | Batch | **1のみ**。異なるMaskを持つBatch=8は実装・検証対象外 |
@@ -108,13 +123,13 @@ Native／All-On／固定Skip／動的Eager／動的Lazyを実行する。**Batch
 
 ## 6. 生成中のLinear Head学習（RLOO Pilot）
 
-Qwen3実モデルのG1とKVの条件を満たした後のみ、**元のモデルを凍結**してLinear Headをオンポリシー学習する。デバッグ用入力：[train_arithmetic.jsonl](../data/pilot/train_arithmetic.jsonl)。
+Qwen3実モデルのG1とKVの条件を満たした後のみ、**元のモデルを凍結**してLinear Headをオンポリシー学習する。デバッグ用入力：[train_multistep.jsonl](../data/pilot/train_multistep.jsonl)。
 
 ```bash
 python experiments/qwen3/run.py train \
   --model Qwen/Qwen3-0.6B --revision "$QWEN_REVISION" \
   --device cuda --dtype bfloat16 --tap post_residual \
-  --dataset data/pilot/train_arithmetic.jsonl \
+  --dataset data/pilot/train_multistep.jsonl \
   --epochs 1 --rollouts 4 --max-new-tokens 16 \
   --exploration 0.05 --cost-weight 0.02 \
   --checkpoint checkpoints/qwen3_router_pilot.pt \
@@ -125,7 +140,8 @@ python experiments/qwen3/run.py train \
 - **Headのみ学習**：LLMの全重みを凍結。Mask系列の実際の`log_prob`と同一Promptの独立RolloutでLeave-One-Out REINFORCEを計算する。
 - **学習信号の注意**：正解一致と文字列類似度の組は**暫定品質代理値**、実費用でなく平均ON率は**費用代理値**。両者の学術的妥当性は未保証。すべてのRolloutで品質差がない場合はデフォルトで更新をSkipする。
 - **学習結果は品質保証ではない**：このデバッグデータだけで未知問題の正解率向上や高速化を主張しない。将来のHoldout評価と最良固定Skipとの同一費用での比較を別に構築する。
-- `data/pilot/dev_arithmetic.jsonl`は参考入力であり、現在のTrain CLIでは**評価未実装**。ここを「テスト済み」と誤表記しない。
+- 複数整数の回答を求める `train_multistep.jsonl` / `dev_multistep.jsonl` を使用する。最初の出力トークンは全層Prefillで決まるため、単一整数問題ではHeadが品質に影響できる区間が不足する。開発データ評価は `evaluate.py` に分離。
+- **初期ON確率0.95（探索前）は暫定値**。同品質かつ全不正解のRolloutを除く品質ゲートはバイアスを生じ得るヒューリスティックで、厳密な不偏REINFORCEと区別する。更新が有効でなければ結果のみ保存して停止する。
 
 ### 6.1 開発データでの学習済みHeadの比較（デバッグ用）
 
@@ -136,7 +152,7 @@ python experiments/qwen3/evaluate.py \
   --model Qwen/Qwen3-0.6B --revision "$QWEN_REVISION" \
   --device cuda --dtype bfloat16 --tap post_residual \
   --checkpoint checkpoints/qwen3_router_pilot.pt \
-  --dataset data/pilot/dev_arithmetic.jsonl \
+  --dataset data/pilot/dev_multistep.jsonl \
   --max-new-tokens 16 \
   --output results/qwen3_pilot_dev.json
 ```
