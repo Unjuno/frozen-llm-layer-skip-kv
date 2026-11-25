@@ -1,6 +1,6 @@
 # Frozen LLM Layer Skipping × Deferred KV Reconstruction
 
-> **状態：Qwen3実モデル検証用コードを公開。** 旧CPU小型DecoderのPilotは実行済みですが、**新しいQwen3実行器の統合試験・実Qwen3本体・GPU高速化は未検証**です。期限なし。原則`main`へ直接コミット。
+> **状態：実験コード・一括実行スクリプトを公開、小型Qwen3公式構造のCPU統合テスト13件PASS。** [実測JSON](results/qwen3_synthetic_cpu_2026-11-25.json)。事前学習済み実モデルの学習・GPU速度・品質は未検証。期限なし。
 
 ## 何を研究するか
 
@@ -29,6 +29,29 @@ Prefillは当初全層実行し、Decode時だけ動的に制御する。3B・7B
 
 ## 実験を始める
 
+**最短手順（ネットワーク不要の小型モデル試験は依存導入後）：**
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[test]'
+python scripts/run_pilot.py --stage smoke
+```
+
+実モデルで正確性を検証する場合：
+
+```bash
+python scripts/run_pilot.py --stage real --device cuda
+```
+
+検証→学習→開発評価→参照速度計測をまとめて実行する場合：
+
+```bash
+python scripts/run_pilot.py --stage pilot --device cuda
+```
+
+各実行は新規の `runs/` 配下にログ、JSON、manifest、必要な場合だけHeadのcheckpointを保存する。**エラーまたは学習更新ゼロで次工程を停止**する。CPUのみなら `--device cpu` を明示する。GPUリソースを自動契約する機能はない。詳細は[Runbook](docs/13_EXPERIMENT_RUNBOOK.md)。
+
 **実行手順の正本：[13 Qwen3 Experiment Runbook](docs/13_EXPERIMENT_RUNBOOK.md)**。まずパッケージを導入し、**モデルをダウンロードしない合成Qwen3構造**で正確性を確認します。
 
 ```bash
@@ -39,7 +62,7 @@ python experiments/qwen3/run.py verify --model synthetic --device cpu --dtype fl
 
 実モデルは必ずCheckpointの**完全なRevision SHA**を指定します。第1Attentionを共有する参照実行器：[qwen3_reference.py](src/frozen_skip/qwen3_reference.py)、検査・学習CLI：[run.py](experiments/qwen3/run.py)、一括KV射影のShape別ベンチ：[bench_kv_projection.py](experiments/qwen3/bench_kv_projection.py)。
 
-**このコード自体に対して実モデルの数値一致を保証したわけではありません。** 学習後の開発データ評価には[evaluate.py](experiments/qwen3/evaluate.py)を使用します。GPU速度・品質改善は実証していません。GitHub Actionsの[CPU合成Qwen3検証ワークフロー](.github/workflows/qwen3-synthetic-cpu.yml)は手動起動専用であり、成功実績を意味しません。
+**小型Qwen3の統合動作は確認済みですが、事前学習済み実モデルやGPU上の動作を保証したわけではありません。** 学習後の開発データ評価には[evaluate.py](experiments/qwen3/evaluate.py)を使用します。GPU速度・品質改善は実証していません。GitHub Actionsの[CPU合成Qwen3検証ワークフロー](.github/workflows/qwen3-synthetic-cpu.yml)は手動起動専用であり、成功実績を意味しません。
 
 ## 研究文書を読む順番
 
@@ -56,7 +79,7 @@ python experiments/qwen3/run.py verify --model synthetic --device cpu --dtype fl
 
 ## 現在の状態
 
-- **設計資料の整理・試験コード：** 参照実行器・学習CLI・GPU測定CLI・依存関係・小型テストを追加。**新コードの統合実行は未確認**。
+- **Qwen3構造のCPU統合試験：** 公式クラスをランダム初期化した4層・隠れ幅64のモデルで13テストPASS。Tap両候補の全ON・Eager/Lazy比較がPASS（[結果](results/qwen3_synthetic_cpu_2026-11-25.json)）。
 - **数学的な仮説：** 未確定と明示して分離。
 - **CPUの合成モデル参照実験：** [初回正確性結果](docs/12_CPU_CORRECTNESS_PILOT.md)を取得済み。**Qwen3実モデルの結果ではない**。29種類のマスクでEager/LazyのLogits差0、位置誤りの負の対照も検出。
 - **Qwen3/Nanbeigeの実モデル学習・GPU測定：未実施**。実測した高速化・品質改善・学術的新規性は主張しない。
