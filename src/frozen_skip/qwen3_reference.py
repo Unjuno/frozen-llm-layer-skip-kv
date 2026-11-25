@@ -39,7 +39,7 @@ class LinearMaskHead(nn.Module):
             raise ValueError("Requires first, intermediate, and last decoder layers")
         self.linear = nn.Linear(hidden_size, num_hidden_layers - 2, bias=True)
 
-    def act(self, tap: torch.Tensor, exploration: float = 0.0):
+    def act(self, tap: torch.Tensor, exploration: float = 0.0, deterministic: bool = False):
         if not 0.0 <= exploration < 0.5:
             raise ValueError("exploration must be in [0,0.5)")
         # Called inside torch.enable_grad to retain gradients only for head.
@@ -47,7 +47,7 @@ class LinearMaskHead(nn.Module):
         probs = torch.sigmoid(logits)
         probs = exploration + (1.0 - 2.0 * exploration) * probs
         dist = torch.distributions.Bernoulli(probs=probs)
-        sample = dist.sample()
+        sample = (probs >= 0.5).to(probs.dtype) if deterministic else dist.sample()
         return sample[0].to(dtype=torch.bool), dist.log_prob(sample).sum()
 
 
@@ -68,7 +68,7 @@ class Qwen3ReferenceRouter:
 
     def __init__(self, model: nn.Module, head: Optional[LinearMaskHead] = None,
                  mode: str = "eager", tap: str = "post_residual",
-                 exploration: float = 0.05):
+                 exploration: float = 0.05, deterministic: bool = False):
         if mode not in {"eager", "lazy"}:
             raise ValueError("mode must be eager or lazy")
         if tap not in {"pre_residual", "post_residual"}:
@@ -78,6 +78,7 @@ class Qwen3ReferenceRouter:
         self.mode = mode
         self.tap = tap
         self.exploration = exploration
+        self.deterministic = deterministic
         self.layers = model.model.layers
         self.n_middle = len(self.layers) - 2
         if self.n_middle <= 0:
@@ -121,7 +122,8 @@ class Qwen3ReferenceRouter:
                     raise ValueError("No head is available for policy sampling")
                 # Model can be under torch.no_grad(); head's policy score must not be.
                 with torch.enable_grad():
-                    action, lp = self.head.act(self.current_tap, self.exploration)
+                    action, lp = self.head.act(self.current_tap, self.exploration,
+                                               deterministic=self.deterministic)
                 # CPU synchronization here is intentional and NOT a speed technique.
                 self.current_mask = [bool(v) for v in action.tolist()]
                 self.current_log_prob = lp
