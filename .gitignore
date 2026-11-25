@@ -22,3 +22,6 @@ checkpoints/
 .DS_Store
 
 # Do not blanket-ignore results/: verified JSON logs may be committed explicitly.
+
+# Unvalidated local run directories (publish only explicitly verified results)
+runs/
