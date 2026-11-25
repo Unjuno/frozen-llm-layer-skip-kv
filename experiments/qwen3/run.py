@@ -7,6 +7,8 @@ All task-accuracy/speed claims require running a pinned real checkpoint.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import re
 import json
 import math
 import platform
@@ -56,7 +58,7 @@ def load_model(args):
         input_ids = torch.tensor([[2, 14, 9, 17]], device=device)
         revision = "randomly_initialized_no_checkpoint"
     else:
-        if not args.revision or args.revision in {"main", "master"}:
+        if not args.revision or not re.fullmatch(r"[0-9a-f]{40}", args.revision):
             raise ValueError("Real checkpoint requires --revision with a fixed commit SHA")
         tokenizer = AutoTokenizer.from_pretrained(args.model, revision=args.revision,
                                                   trust_remote_code=False)
@@ -72,6 +74,8 @@ def load_model(args):
         except (ValueError, TypeError):
             input_ids = tokenizer(args.prompt, return_tensors="pt")["input_ids"].to(device)
         revision = args.revision
+        if model.config.model_type != "qwen3" or len(model.model.layers) != 28:
+            raise ValueError("This real-model pilot is limited to Qwen3-0.6B")
     model.eval()
     for p in model.parameters():
         p.requires_grad_(False)
@@ -85,6 +89,8 @@ def metadata(model, args, revision, device, dtype):
         "datetime_utc": __import__("datetime").datetime.now(
             __import__("datetime").timezone.utc).isoformat(),
         "python": platform.python_version(), "torch": torch.__version__,
+        "os": platform.platform(), "cpu_threads": torch.get_num_threads(),
+        "cuda_version": torch.version.cuda,
         "transformers": __import__("transformers").__version__,
         "model_id": args.model, "model_revision": revision,
         "dtype": str(dtype), "device": str(device),
@@ -168,7 +174,9 @@ def run_fixed(model, prompt, tokens, masks=None, mode="eager",
                 for token in tokens:
                     out = model(input_ids=torch.tensor([[token]], device=prompt.device),
                                 past_key_values=cache, use_cache=True, logits_to_keep=1)
-                    outs.append(out.logits[:, -1, :].detach().float().cpu())
+                    if not measure:
+                        if not measure:
+                            outs.append(out.logits[:, -1, :].detach().float().cpu())
                 stats = {}
             else:
                 outs = []
@@ -184,7 +192,7 @@ def run_fixed(model, prompt, tokens, masks=None, mode="eager",
             seconds = time.perf_counter() - started
     finally:
         mlp_handle.remove()
-    return torch.stack(outs), {
+    return (None if measure else torch.stack(outs)), {
         **stats, "first_block_mlp_invocations": first_mlp_calls[0],
         "decode_wall_seconds": seconds if measure else None}
 
@@ -199,7 +207,9 @@ def verify(model, prompt, revision, device, dtype, args):
     all_on, astats = run_fixed(
         model, prompt, tokens, all_masks, head_probe=True, tap=args.tap)
     full_delta = float((native - all_on).abs().max())
-    all_on_pass = full_delta <= tol and astats["first_attention_calls"] == len(tokens)
+    all_on_pass = (full_delta <= tol and astats["first_attention_calls"] == len(tokens)
+                   and astats["head_probe_calls"] == len(tokens)
+                   and astats["tap_reads"] == len(tokens))
     mlp_pass = astats["first_block_mlp_invocations"] == len(tokens) + 1
     rows = []
     for name, masks in mask_cases(nmid, len(tokens)).items():
@@ -252,11 +262,12 @@ def benchmark(model, prompt, revision, device, dtype, args):
         ("dynamic_lazy", cases["alternating"], "lazy"),
     ]:
         for _ in range(args.warmup):
-            run_fixed(model, prompt, tokens, masks, mode=mode, tap=args.tap)
+            run_fixed(model, prompt, tokens, masks, mode=mode, tap=args.tap,
+                      head_probe=masks is not None, measure=True)
         times = []
         for _ in range(args.repeat):
             _, stats = run_fixed(model, prompt, tokens, masks, mode=mode,
-                                 tap=args.tap, measure=True)
+                                 tap=args.tap, measure=True, head_probe=masks is not None)
             times.append(stats["decode_wall_seconds"])
         result_rows.append({
             "mode": label, "median_s": statistics.median(times),
@@ -267,7 +278,7 @@ def benchmark(model, prompt, revision, device, dtype, args):
         "environment": metadata(model, args, revision, device, dtype),
         "warmup": args.warmup, "repeat": args.repeat,
         "results": result_rows,
-        "important": "Python reference, batch 1, eager attention. Not optimized serving."
+        "important": "Python reference, fixed masks and linear head probe, batch 1. Not optimized serving or sampled routing."
     })
 
 
@@ -325,26 +336,38 @@ def train(model, tokenizer, revision, device, dtype, args):
         raise ValueError("RLOO needs >=2 independent rollouts per prompt")
     if args.max_new_tokens < 2:
         raise ValueError("Need >=2 generated tokens for decode routing")
-    examples = [json.loads(line) for line in Path(args.dataset).read_text().splitlines()
+    if args.epochs < 1 or not 0.5 < args.initial_on < 1.0:
+        raise ValueError("epochs>=1 and 0.5<initial-on<1 required")
+    data_bytes = Path(args.dataset).read_bytes()
+    examples = [json.loads(line) for line in data_bytes.decode('utf-8').splitlines()
                 if line.strip()]
+    if not examples:
+        raise ValueError("Empty training dataset")
     for row in examples:
         if "prompt" not in row or "answer" not in row:
             raise ValueError("Each JSONL row must have prompt and answer")
     head = LinearMaskHead(model.config.hidden_size, len(model.model.layers)).to(
         device=device, dtype=torch.float32)
+    # Start close to all-ON without changing the exploration distribution.
+    with torch.no_grad():
+        head.linear.weight.zero_()
+        head.linear.bias.fill_(math.log(args.initial_on / (1.0 - args.initial_on)))
     optim = torch.optim.AdamW(head.parameters(), lr=args.lr, weight_decay=0.0)
     records = []
+    updates = 0
+    initial = {k: v.detach().clone() for k, v in head.state_dict().items()}
     for epoch in range(args.epochs):
         for idx, item in enumerate(examples):
             group = [rollout(model, tokenizer, item["prompt"], item["answer"],
                              head, args, device) for _ in range(args.rollouts)]
             group = [g for g in group if g is not None]
             if len(group) < 2:
+                records.append({"epoch": epoch, "sample": idx, "skipped": "insufficient routed rollouts"})
                 continue
             qvals = [g["quality_proxy"] for g in group]
             # When every output is equally wrong, a cost-only update risks
             # selecting fast but systematically wrong paths.
-            if max(qvals) - min(qvals) < 1e-6 and not args.allow_cost_only:
+            if max(qvals) - min(qvals) < 1e-6 and not any(g["exact"] for g in group) and not args.allow_cost_only:
                 records.append({"epoch": epoch, "sample": idx,
                                 "skipped": "no task-quality discrimination"})
                 continue
@@ -357,25 +380,45 @@ def train(model, tokenizer, revision, device, dtype, args):
             loss = torch.stack(losses).mean()
             optim.zero_grad(set_to_none=True)
             loss.backward()
+            grad_norm = float(torch.nn.utils.clip_grad_norm_(head.parameters(), 1.0).detach().cpu())
+            if not math.isfinite(grad_norm):
+                raise RuntimeError("Non-finite policy gradient")
+            if grad_norm == 0:
+                records.append({"epoch": epoch, "sample": idx, "skipped": "zero gradient"})
+                continue
             optim.step()
+            updates += 1
             if any(p.grad is not None for p in model.parameters()):
                 raise RuntimeError("Frozen model received a gradient")
             records.append({"epoch": epoch, "sample": idx,
                             "mean_quality_proxy": statistics.mean(qvals),
                             "mean_exact": statistics.mean(g["exact"] for g in group),
                             "mean_active": statistics.mean(g["mean_active"] for g in group),
-                            "loss": float(loss.detach().cpu())})
+                            "loss": float(loss.detach().cpu()), "gradient_norm": grad_norm,
+                            "rollouts": [{k: v for k, v in g.items() if k != "logp"} for g in group]})
+    changed = any(not torch.equal(v, initial[k]) for k, v in head.state_dict().items())
+    result = {"environment": metadata(model, args, revision, device, dtype),
+              "status": "TRAINED_NOT_VALIDATED" if updates and changed else "NO_EFFECTIVE_UPDATE",
+              "updates": updates, "head_changed": changed, "records": records,
+              "dataset_sha256": hashlib.sha256(data_bytes).hexdigest(),
+              "initial_on_before_exploration": args.initial_on,
+              "quality_gate_heuristic": not args.allow_cost_only,
+              "no_speed_or_quality_claim": True}
+    if not updates or not changed:
+        save_json(args.output, result)
+        raise SystemExit(3)
     checkpoint = Path(args.checkpoint)
+    if checkpoint.exists():
+        raise FileExistsError(f"Refusing to overwrite checkpoint {checkpoint}")
     checkpoint.parent.mkdir(parents=True, exist_ok=True)
     torch.save({"head_state_dict": head.state_dict(),
                 "num_layers": len(model.model.layers), "tap": args.tap,
                 "model_id": args.model, "model_revision": revision,
                 "training": "synthetic arithmetic debug dataset / on-policy mask RLOO",
-                "seed": args.seed, "epoch_count": args.epochs}, checkpoint)
-    save_json(args.output, {"environment": metadata(model, args, revision, device, dtype),
-                            "status": "TRAINED_NOT_VALIDATED",
-                            "records": records, "checkpoint": str(checkpoint),
-                            "no_speed_or_quality_claim": True})
+                "seed": args.seed, "epoch_count": args.epochs,
+                "updates": updates, "dataset_sha256": result["dataset_sha256"]}, checkpoint)
+    result["checkpoint"] = str(checkpoint)
+    save_json(args.output, result)
 
 
 def make_parser():
@@ -401,6 +444,8 @@ def make_parser():
     p.add_argument("--rollouts", type=int, default=4)
     p.add_argument("--max-new-tokens", type=int, default=16)
     p.add_argument("--exploration", type=float, default=0.05)
+    p.add_argument("--initial-on", type=float, default=0.95,
+                   help="Initial per-layer Bernoulli p, before exploration (pilot default)")
     p.add_argument("--cost-weight", type=float, default=0.02)
     p.add_argument("--lr", type=float, default=1e-4)
     p.add_argument("--allow-cost-only", action="store_true")
