@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "frozen-llm-layer-skip-kv"
+version = "0.1.0"
+description = "Reference experiments for first-attention activation reuse and frozen Qwen3 tokenwise layer masking"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "torch>=2.3,<3",
+    "transformers==4.57.3",
+    "huggingface-hub>=0.34,<1",
+    "accelerate>=1.1,<2",
+    "safetensors>=0.5,<1",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
