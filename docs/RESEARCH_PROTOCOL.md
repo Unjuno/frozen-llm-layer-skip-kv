@@ -1,6 +1,6 @@
 # Research Protocol｜研究方法の入口
 
-> **現在は研究設計＋CPU合成モデルの正確性Pilotまで実施済み。** Qwen3実モデル・GPU実験は未実施、期限は設定しない。実行結果：[12 CPU Pilot](12_CPU_CORRECTNESS_PILOT.md)。研究目的の正本は[01](01_FOUNDATIONS.md)・[11](11_SHARED_ACTIVATION_ROUTING.md)。
+> **現在は小型Qwen3の統合試験と、事前学習済みQwen3-0.6Bの短いFP32 CPU初回検証までPASS。** 実モデル学習・GPU実験は未実施、期限なし。[13 実験Runbook](13_EXPERIMENT_RUNBOOK.md)／[実モデル実測](../results/qwen3_real_cpu_fp32_2026-11-25.json)。研究目的の正本は[01](01_FOUNDATIONS.md)・[11](11_SHARED_ACTIVATION_ROUTING.md)。
 
 ## 何をする研究か
 
