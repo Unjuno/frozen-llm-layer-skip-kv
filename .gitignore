@@ -1,0 +1,24 @@
+# Python environment and local temporary artifacts
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Checkpoints are run outputs; validate and record metadata before publishing
+checkpoints/
+*.pt
+*.pth
+
+# Local IDE and benchmark profiler state
+.vscode/
+.idea/
+*.nsys-rep
+*.qdrep
+*.ncu-rep
+.DS_Store
+
+# Do not blanket-ignore results/: verified JSON logs may be committed explicitly.
