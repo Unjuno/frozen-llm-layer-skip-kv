@@ -35,15 +35,17 @@ def tiny():
     return model
 
 
-def test_all_on_does_not_change_native_logits_or_first_mlp(tiny):
+@pytest.mark.parametrize("tap", ["pre_residual", "post_residual"])
+def test_all_on_does_not_change_native_logits_or_first_mlp(tiny, tap):
     prompt = torch.tensor([[2, 4, 5]], dtype=torch.long)
     tokens = [6, 7, 8, 9, 10]
     native, _ = run_fixed(tiny, prompt, tokens)
     masks = [[True] * (len(tiny.model.layers) - 2) for _ in tokens]
-    outputs, stats = run_fixed(tiny, prompt, tokens, masks, head_probe=True)
+    outputs, stats = run_fixed(tiny, prompt, tokens, masks, head_probe=True, tap=tap)
     assert torch.allclose(native, outputs, atol=1e-5, rtol=0)
     assert stats["first_attention_calls"] == len(tokens)
     assert stats["head_probe_calls"] == len(tokens)
+    assert stats["tap_reads"] == len(tokens)
     # One prefill invocation + one first-layer MLP invocation per decode step.
     assert stats["first_block_mlp_invocations"] == len(tokens) + 1
 
@@ -89,3 +91,49 @@ def test_mask_width_is_guarded(tiny):
     with Qwen3ReferenceRouter(tiny) as runner:
         with pytest.raises(ValueError):
             runner.begin_decode([True])
+
+
+@pytest.mark.parametrize("tap", ["pre_residual", "post_residual"])
+def test_tap_is_actual_native_activation(tiny, tap):
+    """Read the native tensor; no extra residual or attention computation."""
+    prompt = torch.tensor([[2, 4, 5]])
+    cache = DynamicCache(config=tiny.config)
+    with torch.no_grad():
+        tiny(input_ids=prompt, past_key_values=cache, use_cache=True)
+    seen = []
+    block = tiny.model.layers[0]
+    if tap == "pre_residual":
+        handle = block.self_attn.register_forward_hook(
+            lambda module, args, result: seen.append(result[0]))
+    else:
+        handle = block.post_attention_layernorm.register_forward_pre_hook(
+            lambda module, args: seen.append(args[0]))
+    try:
+        with Qwen3ReferenceRouter(tiny, tap=tap) as runner, torch.no_grad():
+            runner.begin_decode([True] * runner.n_middle)
+            tiny(input_ids=torch.tensor([[6]]), past_key_values=cache, use_cache=True)
+            runner.end_decode()
+            assert len(seen) == 1
+            assert runner.current_tap.data_ptr() == seen[0][:, -1, :].data_ptr()
+            assert torch.equal(runner.current_tap, seen[0][:, -1, :])
+    finally:
+        handle.remove()
+
+
+def test_project_only_matches_native_kv(tiny):
+    """Independent native Attention cache vs manual projection on same input."""
+    prompt = torch.tensor([[2, 4, 5]])
+    a = DynamicCache(config=tiny.config)
+    b = DynamicCache(config=tiny.config)
+    with torch.no_grad():
+        tiny(input_ids=prompt, past_key_values=a, use_cache=True)
+        tiny(input_ids=prompt, past_key_values=b, use_cache=True)
+        tiny(input_ids=torch.tensor([[6]]), past_key_values=a, use_cache=True)
+        with Qwen3ReferenceRouter(tiny, mode="eager") as runner:
+            runner.begin_decode([False] + [True] * (runner.n_middle - 1))
+            tiny(input_ids=torch.tensor([[6]]), past_key_values=b, use_cache=True)
+            runner.end_decode()
+    # Layer index 1 receives the same native first-block output in both paths.
+    # Compare its KV independently of downstream changes caused by skipping it.
+    assert torch.allclose(a.layers[1].keys, b.layers[1].keys, atol=1e-6, rtol=0)
+    assert torch.allclose(a.layers[1].values, b.layers[1].values, atol=1e-6, rtol=0)
