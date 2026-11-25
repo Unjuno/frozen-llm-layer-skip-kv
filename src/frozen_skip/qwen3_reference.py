@@ -92,7 +92,6 @@ class Qwen3ReferenceRouter:
         self.current_mask = None
         self.current_log_prob = None
         self.current_tap = None
-        self.first_input = None
         self.forced_mask = None
         self.pending = {j: [] for j in range(1, len(self.layers) - 1)}
         self.stats = Counter()
@@ -102,31 +101,27 @@ class Qwen3ReferenceRouter:
         self._hooks = []
 
     def __enter__(self):
-        def on_first_enter(module, args):
-            if self.active:
-                self.first_input = args[0]
-
-        def on_attention_exit(module, args, output):
-            if not self.active:
-                return
-            self.stats["first_attention_calls"] += 1
-            if self.first_input is None:
-                raise RuntimeError("First-layer input capture was missing")
-            attn_output = output[0] if isinstance(output, tuple) else output
-            tensor = attn_output if self.tap == "pre_residual" else self.first_input + attn_output
-            if tensor.shape[0] != 1 or tensor.shape[1] != 1:
+        def select_mask(tensor):
+            if self.current_mask is not None:
+                raise RuntimeError("Linear Head selected more than once in one decode step")
+            if tensor.shape[:2] != (1, 1):
                 raise ValueError("Only batch=1, one decode token is supported")
             self.current_tap = tensor[:, -1, :].detach()
+            self.stats["tap_reads"] += 1
             if self.forced_mask is None:
                 if self.head is None:
                     raise ValueError("No head is available for policy sampling")
-                # Model can be under torch.no_grad(); head's policy score must not be.
-                with torch.enable_grad():
-                    action, lp = self.head.act(self.current_tap, self.exploration,
-                                               deterministic=self.deterministic)
-                # CPU synchronization here is intentional and NOT a speed technique.
+                if self.deterministic:
+                    with torch.no_grad():
+                        action, _ = self.head.act(self.current_tap, 0.0, deterministic=True)
+                    self.current_log_prob = None
+                else:
+                    with torch.enable_grad():
+                        action, lp = self.head.act(self.current_tap, self.exploration)
+                    self.current_log_prob = lp
+                # Correctness-first dispatch; CPU synchronization is not a speed technique.
                 self.current_mask = [bool(v) for v in action.tolist()]
-                self.current_log_prob = lp
+                self.stats["head_policy_calls"] += 1
             else:
                 self.current_mask = self.forced_mask.copy()
                 if self.head is not None:
@@ -134,8 +129,22 @@ class Qwen3ReferenceRouter:
                         _ = self.head.linear(self.current_tap.float())
                     self.stats["head_probe_calls"] += 1
 
-        self._hooks.append(self.layers[0].register_forward_pre_hook(on_first_enter))
+        def on_attention_exit(module, args, output):
+            if not self.active:
+                return
+            self.stats["first_attention_calls"] += 1
+            if self.tap == "pre_residual":
+                select_mask(output[0] if isinstance(output, tuple) else output)
+
+        def on_post_attention_norm_enter(module, args):
+            # This is the actual residual-added tensor produced by the native
+            # first decoder layer. No duplicate addition or Attention call.
+            if self.active and self.tap == "post_residual":
+                select_mask(args[0])
+
         self._hooks.append(self.layers[0].self_attn.register_forward_hook(on_attention_exit))
+        self._hooks.append(self.layers[0].post_attention_layernorm.register_forward_pre_hook(
+            on_post_attention_norm_enter))
         for idx in range(1, len(self.layers) - 1):
             layer = self.layers[idx]
             original = layer.forward
@@ -192,13 +201,14 @@ class Qwen3ReferenceRouter:
         self.current_mask = None
         self.current_log_prob = None
         self.current_tap = None
-        self.first_input = None
 
     def end_decode(self):
         if self.current_mask is None:
             raise RuntimeError("Decode step finished without choosing a mask")
         if self.stats["first_attention_calls"] != len(self.masks) + 1:
             raise RuntimeError("First Attention was not invoked exactly once per decode step")
+        if self.stats["tap_reads"] != len(self.masks) + 1:
+            raise RuntimeError("Expected exactly one shared activation read per decode step")
         self.masks.append(self.current_mask.copy())
         if self.current_log_prob is not None:
             self.log_probs.append(self.current_log_prob)
