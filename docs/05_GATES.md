@@ -10,7 +10,8 @@
 | 研究目的・基本構造 | **文書化済み** | [01 研究目的とモデル構造](01_FOUNDATIONS.md) |
 | 学習・KV・GPUの評価手順 | **計画文書として整理済み** | [02](02_ROUTER_TRAINING.md) / [03](03_KV_CACHE.md) / [04](04_EVALUATION.md) |
 | CPU合成モデルの参照実行器 | **実装・初回テストPASS** | [12 CPU Pilot](12_CPU_CORRECTNESS_PILOT.md)。Qwen3重みは未使用 |
-| Qwen3の実行器 | **未実装・未検証** | 実モデルでのG1は未達 |
+| Qwen3の参照実行器 | **コード作成済み・統合動作未検証** | [13 実験Runbook](13_EXPERIMENT_RUNBOOK.md)／[ソース](../src/frozen_skip/qwen3_reference.py) |
+| Qwen3-0.6B実重みによるG1 | **未達** | 不変条件の実測なし。合成Qwen3も今回未実行 |
 | 合成モデルのHead更新・Eager/Lazy KV | **参照テストPASS** | 1回の合成REINFORCE更新、29種類固定Replay。ただしタスク正解0件 |
 | 実モデルのRouter学習・KV補完 | **未実装・未検証** | Qwen3本体では未実施 |
 | GPU速度・品質改善 | **未測定** | ベンチマーク結果なし |
