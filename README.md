@@ -39,7 +39,7 @@ python experiments/qwen3/run.py verify --model synthetic --device cpu --dtype fl
 
 実モデルは必ずCheckpointの**完全なRevision SHA**を指定します。第1Attentionを共有する参照実行器：[qwen3_reference.py](src/frozen_skip/qwen3_reference.py)、検査・学習CLI：[run.py](experiments/qwen3/run.py)、一括KV射影のShape別ベンチ：[bench_kv_projection.py](experiments/qwen3/bench_kv_projection.py)。
 
-**このコード自体に対して実モデルの数値一致を保証したわけではありません。** CUDA GPUを利用できない環境で実GPU高速化を主張せず、Benchmarkの合否も実行後に判断します。
+**このコード自体に対して実モデルの数値一致を保証したわけではありません。** 学習後の開発データ評価には[evaluate.py](experiments/qwen3/evaluate.py)を使用します。GPU速度・品質改善は実証していません。GitHub Actionsの[CPU合成Qwen3検証ワークフロー](.github/workflows/qwen3-synthetic-cpu.yml)は手動起動専用であり、成功実績を意味しません。
 
 ## 研究文書を読む順番
 
