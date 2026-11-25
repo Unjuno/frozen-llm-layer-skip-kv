@@ -1,6 +1,6 @@
 # 研究文書ガイド
 
-> 研究設計に加え、**CPU合成モデルの参照正確性実験**を実施済み。**Qwen3本体とGPUの実験は未実施**。研究の正本は01と11。KV負債や最終ON位置は従属課題。
+> 研究設計に加え、**小型Qwen3のCPU統合13件PASS、実Qwen3-0.6Bの短いFP32 CPU初回検証PASS**。GPUと実モデル学習は未実施。研究の正本は01と11。KV負債や最終ON位置は従属課題。
 
 ## まず読む文書：研究の中心
 
@@ -16,7 +16,7 @@
 ## Qwen3で新たに実験するためのコード
 
 - **[13 Qwen3実験Runbook](13_EXPERIMENT_RUNBOOK.md)**：固定モデルRevision、合成Qwen3検査、実モデルの数値確認、RLOO Pilot、GPU壁時計測定、正方行列理論と実KV GEMMの区別。
-- [Qwen3参照実行器](../src/frozen_skip/qwen3_reference.py)／[verify・bench・train CLI](../experiments/qwen3/run.py)／[KV射影Microbenchmark](../experiments/qwen3/bench_kv_projection.py)。**新コードは未統合実行**。
+- [Qwen3参照実行器](../src/frozen_skip/qwen3_reference.py)／[verify・bench・train CLI](../experiments/qwen3/run.py)／[KV射影Microbenchmark](../experiments/qwen3/bench_kv_projection.py)。**CPU統合実行済み。** [一括実行](../scripts/run_pilot.py)／[小型Qwen3実測](../results/qwen3_synthetic_cpu_2026-11-25.json)／[実Qwen3実測](../results/qwen3_real_cpu_fp32_2026-11-25.json)。
 - [小型Qwen3構造の検査](../tests/test_qwen3_reference.py)はモデル重みのダウンロード不要。実行後に初めて結果を記録する。
 - [学習済みHeadの開発データ評価](../experiments/qwen3/evaluate.py)はCheckPointと実モデルが必要。**ベースラインは固定経路の簡易候補であり、最良固定経路ではない**。
 
