@@ -1,6 +1,6 @@
 # 05｜検証ゲート・現在地・未決事項
 
-> **管理方針：** 期限なし。2026-11-18のユーザー依頼を受け、**CPU小型合成Decoderでの参照正確性テスト**を実施した（[結果](12_CPU_CORRECTNESS_PILOT.md)）。**Qwen3の実重みを使ったG1は未達、GPU実測も未実施**。研究目的は[01](01_FOUNDATIONS.md)、[11](11_SHARED_ACTIVATION_ROUTING.md)が正本。
+> **管理方針：** 期限なし。2026-11-18のユーザー依頼を受け、**CPU小型合成Decoderでの参照正確性テスト**を実施した（[結果](12_CPU_CORRECTNESS_PILOT.md)）。**11月25日：実Qwen3-0.6Bの短いFP32 CPU初回検証はPASS、GPU/BF16を含むG1の全条件は未完了**（[実測](../results/qwen3_real_cpu_fp32_2026-11-25.json)）。研究目的は[01](01_FOUNDATIONS.md)、[11](11_SHARED_ACTIVATION_ROUTING.md)が正本。
 
 ## 現在の状態
 
@@ -10,10 +10,10 @@
 | 研究目的・基本構造 | **文書化済み** | [01 研究目的とモデル構造](01_FOUNDATIONS.md) |
 | 学習・KV・GPUの評価手順 | **計画文書として整理済み** | [02](02_ROUTER_TRAINING.md) / [03](03_KV_CACHE.md) / [04](04_EVALUATION.md) |
 | CPU合成モデルの参照実行器 | **実装・初回テストPASS** | [12 CPU Pilot](12_CPU_CORRECTNESS_PILOT.md)。Qwen3重みは未使用 |
-| Qwen3の参照実行器 | **コード作成済み・統合動作未検証** | [13 実験Runbook](13_EXPERIMENT_RUNBOOK.md)／[ソース](../src/frozen_skip/qwen3_reference.py) |
-| Qwen3-0.6B実重みによるG1 | **未達** | 不変条件の実測なし。合成Qwen3も今回未実行 |
+| Qwen3の参照実行器 | **小型公式Qwen3構造でCPU 13テストPASS** | [実測](../results/qwen3_synthetic_cpu_2026-11-25.json)／[13 実験Runbook](13_EXPERIMENT_RUNBOOK.md) |
+| Qwen3-0.6B実重みによるG1 | **CPU短系列Pilot PASS／GPU・長系列は未完了** | [実測](../results/qwen3_real_cpu_fp32_2026-11-25.json)。1プロンプト、FP32、2 Decode位置、6マスク列の最大Logits差0 |
 | 合成モデルのHead更新・Eager/Lazy KV | **参照テストPASS** | 1回の合成REINFORCE更新、29種類固定Replay。ただしタスク正解0件 |
-| 実モデルのRouter学習・KV補完 | **未実装・未検証** | Qwen3本体では未実施 |
+| 実モデルのHead学習 | **実装済み・未検証** | [一括実行](../scripts/run_pilot.py)。実Qwen3の学習更新は未確認 |
 | GPU速度・品質改善 | **未測定** | ベンチマーク結果なし |
 | Nanbeigeへの移植 | **未着手** | 検証ログなし |
 
@@ -37,7 +37,7 @@ G1〜G8は**検証作業の順序**であり、日付や作業時間の約束で
 
 ## 次の検証：G1
 
-**実行用の参照コードとRunbookを作成したが、以下はQwen3-0.6Bの事前学習済み重みではまだ実証していない：**
+**実Qwen3-0.6Bの短いFP32 CPU PilotはPASS。以下のGPU/BF16・長系列の検証は未完了：**
 
 1. Qwen3-0.6Bの固定revision・Tokenizer・BF16・Backendの記録と通常全層Baseline。
 2. 第1・最終層が常時ONで、任意の26ビットマスクを適用できる実行器。
