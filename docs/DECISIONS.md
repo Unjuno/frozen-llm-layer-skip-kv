@@ -34,6 +34,9 @@
 | R-002 | 2026-11-16 | **旧提案の優先順位を撤回** | 旧P-004の「KV補完負債T1を中心」、旧P-009の「KV負債を中心に新規性を主張」、旧P-011の「残差加算後Tapを第一候補と決める」を**現在の確定仕様として扱わない**。KV解析は[06/08/09](06_OPTIMIZATION_TARGETS.md)に補助的に保存。Tapは**Attention出力の残差加算前／後とも未決**。最終ON・連続OFFを直接報酬化しない | [11](11_SHARED_ACTIVATION_ROUTING.md), [10](10_NOVELTY_AND_RATIONALITY.md) |
 | D-008 | 2026-11-16 | **主設計の責任範囲を明文化** | 第1Attentionを通常LLMが1回だけ実行し、既存活性をHeadと本体が共有する。**第1層MLPは必ず完了**し、その出力を中間層Executorへ渡す。HeadはHidden Stateを変換するAdapterではなく**全中間層マスクを一括出力する制御器**。共有だけを元LLMに対する高速化成果とはしない | [11](11_SHARED_ACTIVATION_ROUTING.md), [02](02_ROUTER_TRAINING.md) |
 
+| D-009 | 2026-11-25 | **実験準備：コード作成済み、統合未実行** | 第1Attention活性のフック共有、全中間層の一括Linear Mask、Eager Project-Only、Lazy補完、実モデル・合成Qwen3用のCLI、RLOO Pilot、固定Maskとの開発比較を追加。**本体の第1層MLP・最終層は常時実行**。確定したアルゴリズムを変更せず、`Transformers==4.57.3`に実装を限定。**実際のQwen3数値一致・GPU性能・品質改善は未測定** | [13](13_EXPERIMENT_RUNBOOK.md), [11](11_SHARED_ACTIVATION_ROUTING.md) |
+| P-012 | 2026-11-25 | **参考・適用未検証** | OpenAIの2026-11-24プレプリント`ω=9/4`を出典台帳RW-17に記載。理論的な**平方行列**の漸近指数を長方形KV射影のGPU実測速度と同一視せず、まずGEMV／一括GEMM／K/V統合GEMMのMicrobenchmarkを実行可能にする。**論文のアルゴリズムは実装していない** | [RW-17](PRIOR_ART_AND_ATTRIBUTION.md), [13](13_EXPERIMENT_RUNBOOK.md) |
+
 ### 変更記録のひな型
 
 ```markdown
