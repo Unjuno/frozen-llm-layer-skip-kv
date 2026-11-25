@@ -1,0 +1,270 @@
+{
+  "source_commit": "4e4c8dede36a8216508143927ef161f6e93c20be",
+  "test_stdout": "13 passed in 4.91s",
+  "origin": "executed on connected Linux aarch64 CPU host; JSON read from actual result files",
+  "scope": "randomly initialized Qwen3 architecture, not pretrained; two-repeat wall-time smoke only; no GPU speed or task accuracy claim",
+  "results": {
+    "qwen3_synthetic_post_residual.json": {
+      "status": "PASS",
+      "environment": {
+        "datetime_utc": "2026-11-25T08:06:25.859563+00:00",
+        "python": "3.12.3",
+        "torch": "2.8.0+cpu",
+        "os": "Linux-7.0.0-1013-oracle-aarch64-with-glibc2.39",
+        "cpu_threads": 1,
+        "cuda_version": null,
+        "transformers": "4.57.3",
+        "model_id": "synthetic",
+        "model_revision": "randomly_initialized_no_checkpoint",
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "gpu_name": null,
+        "attention_backend": "eager",
+        "batch": 1,
+        "num_layers": 4,
+        "hidden_size": 64,
+        "seed": 20261125,
+        "decode_steps": 6,
+        "tap": "post_residual",
+        "method": "correctness reference: Python mask branching / no compile"
+      },
+      "native_vs_masked_all_on": {
+        "pass": true,
+        "max_abs_logits": 0,
+        "first_attention_calls": 6,
+        "first_mlp_calls": 7,
+        "head_probe_calls": 6
+      },
+      "first_layer_mlp_pass": true,
+      "eager_vs_lazy_fixed_replay": [
+        {
+          "case": "all_on",
+          "pass": true,
+          "max_abs_logit_diff": 0,
+          "eager_skip_projected": 0,
+          "lazy_reconstructed": 0,
+          "lazy_pending_at_end": 0,
+          "expected_pending": 0
+        },
+        {
+          "case": "all_off",
+          "pass": true,
+          "max_abs_logit_diff": 0,
+          "eager_skip_projected": 12,
+          "lazy_reconstructed": 0,
+          "lazy_pending_at_end": 12,
+          "expected_pending": 12
+        },
+        {
+          "case": "single_skip",
+          "pass": true,
+          "max_abs_logit_diff": 0,
+          "eager_skip_projected": 6,
+          "lazy_reconstructed": 0,
+          "lazy_pending_at_end": 6,
+          "expected_pending": 6
+        },
+        {
+          "case": "alternating",
+          "pass": true,
+          "max_abs_logit_diff": 0,
+          "eager_skip_projected": 6,
+          "lazy_reconstructed": 5,
+          "lazy_pending_at_end": 1,
+          "expected_pending": 1
+        },
+        {
+          "case": "off_then_resume",
+          "pass": true,
+          "max_abs_logit_diff": 0,
+          "eager_skip_projected": 6,
+          "lazy_reconstructed": 6,
+          "lazy_pending_at_end": 0,
+          "expected_pending": 0
+        },
+        {
+          "case": "random",
+          "pass": true,
+          "max_abs_logit_diff": 0,
+          "eager_skip_projected": 5,
+          "lazy_reconstructed": 4,
+          "lazy_pending_at_end": 1,
+          "expected_pending": 1
+        }
+      ],
+      "tolerance": 0.0002,
+      "claim_scope": "numeric replay correctness only: NOT accuracy or GPU speed"
+    },
+    "qwen3_synthetic_pre_residual.json": {
+      "status": "PASS",
+      "environment": {
+        "datetime_utc": "2026-11-25T08:06:30.999181+00:00",
+        "python": "3.12.3",
+        "torch": "2.8.0+cpu",
+        "os": "Linux-7.0.0-1013-oracle-aarch64-with-glibc2.39",
+        "cpu_threads": 1,
+        "cuda_version": null,
+        "transformers": "4.57.3",
+        "model_id": "synthetic",
+        "model_revision": "randomly_initialized_no_checkpoint",
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "gpu_name": null,
+        "attention_backend": "eager",
+        "batch": 1,
+        "num_layers": 4,
+        "hidden_size": 64,
+        "seed": 20261125,
+        "decode_steps": 6,
+        "tap": "pre_residual",
+        "method": "correctness reference: Python mask branching / no compile"
+      },
+      "native_vs_masked_all_on": {
+        "pass": true,
+        "max_abs_logits": 0,
+        "first_attention_calls": 6,
+        "first_mlp_calls": 7,
+        "head_probe_calls": 6
+      },
+      "first_layer_mlp_pass": true,
+      "eager_vs_lazy_fixed_replay": [
+        {
+          "case": "all_on",
+          "pass": true,
+          "max_abs_logit_diff": 0,
+          "eager_skip_projected": 0,
+          "lazy_reconstructed": 0,
+          "lazy_pending_at_end": 0,
+          "expected_pending": 0
+        },
+        {
+          "case": "all_off",
+          "pass": true,
+          "max_abs_logit_diff": 0,
+          "eager_skip_projected": 12,
+          "lazy_reconstructed": 0,
+          "lazy_pending_at_end": 12,
+          "expected_pending": 12
+        },
+        {
+          "case": "single_skip",
+          "pass": true,
+          "max_abs_logit_diff": 0,
+          "eager_skip_projected": 6,
+          "lazy_reconstructed": 0,
+          "lazy_pending_at_end": 6,
+          "expected_pending": 6
+        },
+        {
+          "case": "alternating",
+          "pass": true,
+          "max_abs_logit_diff": 0,
+          "eager_skip_projected": 6,
+          "lazy_reconstructed": 5,
+          "lazy_pending_at_end": 1,
+          "expected_pending": 1
+        },
+        {
+          "case": "off_then_resume",
+          "pass": true,
+          "max_abs_logit_diff": 0,
+          "eager_skip_projected": 6,
+          "lazy_reconstructed": 6,
+          "lazy_pending_at_end": 0,
+          "expected_pending": 0
+        },
+        {
+          "case": "random",
+          "pass": true,
+          "max_abs_logit_diff": 0,
+          "eager_skip_projected": 5,
+          "lazy_reconstructed": 4,
+          "lazy_pending_at_end": 1,
+          "expected_pending": 1
+        }
+      ],
+      "tolerance": 0.0002,
+      "claim_scope": "numeric replay correctness only: NOT accuracy or GPU speed"
+    },
+    "qwen3_synthetic_bench_smoke.json": {
+      "status": "MEASURED_CPU_WALL",
+      "environment": {
+        "datetime_utc": "2026-11-25T08:06:35.776791+00:00",
+        "python": "3.12.3",
+        "torch": "2.8.0+cpu",
+        "os": "Linux-7.0.0-1013-oracle-aarch64-with-glibc2.39",
+        "cpu_threads": 1,
+        "cuda_version": null,
+        "transformers": "4.57.3",
+        "model_id": "synthetic",
+        "model_revision": "randomly_initialized_no_checkpoint",
+        "dtype": "torch.float32",
+        "device": "cpu",
+        "gpu_name": null,
+        "attention_backend": "eager",
+        "batch": 1,
+        "num_layers": 4,
+        "hidden_size": 64,
+        "seed": 20261125,
+        "decode_steps": 3,
+        "tap": "post_residual",
+        "method": "correctness reference: Python mask branching / no compile"
+      },
+      "warmup": 1,
+      "repeat": 2,
+      "results": [
+        {
+          "mode": "native",
+          "median_s": 0.019728528102859855,
+          "min_s": 0.01899750391021371,
+          "max_s": 0.020459552295506,
+          "individual_wall_seconds": [
+            0.01899750391021371,
+            0.020459552295506
+          ]
+        },
+        {
+          "mode": "all_on",
+          "median_s": 0.019347406458109617,
+          "min_s": 0.018918743822723627,
+          "max_s": 0.019776069093495607,
+          "individual_wall_seconds": [
+            0.018918743822723627,
+            0.019776069093495607
+          ]
+        },
+        {
+          "mode": "fixed_skip",
+          "median_s": 0.016453649383038282,
+          "min_s": 0.016380128916352987,
+          "max_s": 0.016527169849723577,
+          "individual_wall_seconds": [
+            0.016527169849723577,
+            0.016380128916352987
+          ]
+        },
+        {
+          "mode": "dynamic_eager",
+          "median_s": 0.016931552439928055,
+          "min_s": 0.016834571957588196,
+          "max_s": 0.017028532922267914,
+          "individual_wall_seconds": [
+            0.017028532922267914,
+            0.016834571957588196
+          ]
+        },
+        {
+          "mode": "dynamic_lazy",
+          "median_s": 0.017364555038511753,
+          "min_s": 0.017206774093210697,
+          "max_s": 0.01752233598381281,
+          "individual_wall_seconds": [
+            0.017206774093210697,
+            0.01752233598381281
+          ]
+        }
+      ],
+      "important": "Python reference, fixed masks and linear head probe, batch 1. Not optimized serving or sampled routing."
+    }
+  }
+}
