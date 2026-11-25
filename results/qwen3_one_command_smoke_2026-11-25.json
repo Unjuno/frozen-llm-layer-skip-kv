@@ -1,0 +1,104 @@
+{
+  "status": "COMPLETED_NOT_SCIENTIFIC_VALIDATION",
+  "stage": "smoke",
+  "source_commit": "4e1cbdbb71b770e97745a04e2ceda86437f64827",
+  "tracked_worktree_dirty": false,
+  "device": "cpu",
+  "dtype": "float32",
+  "tap": "post_residual",
+  "seed": 20261125,
+  "model_revision": null,
+  "started_utc": "20261125T080929Z",
+  "commands": [
+    {
+      "name": "pytest",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_qwen3_reference.py"
+      ],
+      "status": "PASS",
+      "returncode": 0
+    },
+    {
+      "name": "verify_pre_residual",
+      "command": [
+        "python",
+        "experiments/qwen3/run.py",
+        "verify",
+        "--model",
+        "synthetic",
+        "--tap",
+        "pre_residual",
+        "--device",
+        "cpu",
+        "--dtype",
+        "float32",
+        "--seed",
+        "20261125",
+        "--decode-steps",
+        "6",
+        "--output",
+        "runs/integration_20261125/verify_pre_residual.json"
+      ],
+      "status": "PASS",
+      "returncode": 0
+    },
+    {
+      "name": "verify_post_residual",
+      "command": [
+        "python",
+        "experiments/qwen3/run.py",
+        "verify",
+        "--model",
+        "synthetic",
+        "--tap",
+        "post_residual",
+        "--device",
+        "cpu",
+        "--dtype",
+        "float32",
+        "--seed",
+        "20261125",
+        "--decode-steps",
+        "6",
+        "--output",
+        "runs/integration_20261125/verify_post_residual.json"
+      ],
+      "status": "PASS",
+      "returncode": 0
+    },
+    {
+      "name": "bench_smoke",
+      "command": [
+        "python",
+        "experiments/qwen3/run.py",
+        "bench",
+        "--model",
+        "synthetic",
+        "--tap",
+        "post_residual",
+        "--warmup",
+        "1",
+        "--repeat",
+        "2",
+        "--device",
+        "cpu",
+        "--dtype",
+        "float32",
+        "--seed",
+        "20261125",
+        "--decode-steps",
+        "6",
+        "--output",
+        "runs/integration_20261125/bench_smoke.json"
+      ],
+      "status": "PASS",
+      "returncode": 0
+    }
+  ],
+  "pytest_output": ".............                                                            [100%]\n13 passed in 10.22s",
+  "path_note": "Machine-specific absolute paths normalized; all statuses and return codes read from the executed manifest."
+}
