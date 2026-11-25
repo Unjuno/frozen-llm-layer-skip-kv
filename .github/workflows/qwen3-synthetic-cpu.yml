@@ -1,0 +1,35 @@
+name: Synthetic Qwen3 CPU reference checks
+on:
+  workflow_dispatch:
+
+jobs:
+  cpu-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only PyTorch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install pinned Qwen3 dependencies
+        run: python -m pip install -e '.[test]'
+      - name: Test synthetic Qwen3 invariants
+        run: python -m pytest -q tests/test_qwen3_reference.py
+      - name: Synthetic CLI correctness gate
+        run: |
+          python experiments/qwen3/run.py verify \
+            --model synthetic --device cpu --dtype float32 \
+            --decode-steps 6 --output results/qwen3_synthetic_g1.json
+      - name: Attach synthetic result only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-qwen3-g1
+          path: results/qwen3_synthetic_g1.json
+          if-no-files-found: ignore
