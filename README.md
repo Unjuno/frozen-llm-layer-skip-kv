@@ -1,6 +1,6 @@
 # Frozen LLM Layer Skipping × Deferred KV Reconstruction
 
-> **状態：研究設計＋CPU小型合成モデルの初回正確性検査。** Qwen3本体による検証・GPU実測は未実施。期限なし。原則として公開リポジトリの`main`へ直接コミットする。
+> **状態：Qwen3実モデル検証用コードを公開。** 旧CPU小型DecoderのPilotは実行済みですが、**新しいQwen3実行器の統合試験・実Qwen3本体・GPU高速化は未検証**です。期限なし。原則`main`へ直接コミット。
 
 ## 何を研究するか
 
