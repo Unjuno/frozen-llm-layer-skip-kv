@@ -78,6 +78,14 @@
 
 **実装時に必要な注意：** Qwen3の`output_attentions`などで取得するAttention**重み**は、Linear Head用に共有する**Hidden Stateの活性**とは異なる。Attention出力の残差加算前後、MLPまで完了したBlock出力のどれをTapとするかを事前に指定する。
 
+## 2.4 行列乗算指数の2026年11月24日プレプリント（参考のみ）
+
+| ID | 一次資料 | 本研究で参照した内容 | **実装への採用状態** |
+|---|---|---|---|
+| **RW-17** | OpenAI, *The matrix multiplication exponent is nine fourths* (2026-11-24), [公式プレプリント](https://github.com/openai/math/blob/main/preprints/The-matrix-multiplication-exponent-is-nine-fourths-November-24-2026/README.md), [Lean形式化の範囲](https://github.com/openai/math/blob/main/lean/docs/379.md) | 正方行列乗算の漸近的な指数を`9/4`と主張する理論と、実装上の長方形K/V射影を**混同しないため**の比較背景 | **参考のみ。アルゴリズム・コードは採用していない。独立したGPU高速化の証拠ではない** |
+
+**出典上の注意：** この公表はプレプリントであり、著者の主張と学界による独立検証の完了を区別する。LeanのScopeは平方指数の形式化と、各有限行列サイズに対する具体的な下界の**未形式化**を明示する。この理論から本研究のGPU上のK/V射影速度を保証しない。[13 Experiment Runbook](13_EXPERIMENT_RUNBOOK.md)で、`M×d`と`d×2d_KV`の実際の長方形GEMMを別に計測する。
+
 ## 3. 概念ごとの「どこから・何を」
 
 | 本研究の要素 | 参照元 | 本研究で独自性として**主張しないこと** | 未確定の差分候補 |
