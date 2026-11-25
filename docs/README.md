@@ -18,6 +18,7 @@
 - **[13 Qwen3実験Runbook](13_EXPERIMENT_RUNBOOK.md)**：固定モデルRevision、合成Qwen3検査、実モデルの数値確認、RLOO Pilot、GPU壁時計測定、正方行列理論と実KV GEMMの区別。
 - [Qwen3参照実行器](../src/frozen_skip/qwen3_reference.py)／[verify・bench・train CLI](../experiments/qwen3/run.py)／[KV射影Microbenchmark](../experiments/qwen3/bench_kv_projection.py)。**新コードは未統合実行**。
 - [小型Qwen3構造の検査](../tests/test_qwen3_reference.py)はモデル重みのダウンロード不要。実行後に初めて結果を記録する。
+- [学習済みHeadの開発データ評価](../experiments/qwen3/evaluate.py)はCheckPointと実モデルが必要。**ベースラインは固定経路の簡易候補であり、最良固定経路ではない**。
 
 ## 実際に実施した参照実験
 
