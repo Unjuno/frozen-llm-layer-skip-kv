@@ -27,6 +27,20 @@
 
 Prefillは当初全層実行し、Decode時だけ動的に制御する。3B・7B等の中間モデルは挟まない。
 
+## 実験を始める
+
+**実行手順の正本：[13 Qwen3 Experiment Runbook](docs/13_EXPERIMENT_RUNBOOK.md)**。まずパッケージを導入し、**モデルをダウンロードしない合成Qwen3構造**で正確性を確認します。
+
+```bash
+python -m pip install -e '.[test]'
+pytest -q tests/test_qwen3_reference.py
+python experiments/qwen3/run.py verify --model synthetic --device cpu --dtype float32 --output results/qwen3_synthetic_g1.json
+```
+
+実モデルは必ずCheckpointの**完全なRevision SHA**を指定します。第1Attentionを共有する参照実行器：[qwen3_reference.py](src/frozen_skip/qwen3_reference.py)、検査・学習CLI：[run.py](experiments/qwen3/run.py)、一括KV射影のShape別ベンチ：[bench_kv_projection.py](experiments/qwen3/bench_kv_projection.py)。
+
+**このコード自体に対して実モデルの数値一致を保証したわけではありません。** CUDA GPUを利用できない環境で実GPU高速化を主張せず、Benchmarkの合否も実行後に判断します。
+
 ## 研究文書を読む順番
 
 | 優先 | 文書 | 役割 |
