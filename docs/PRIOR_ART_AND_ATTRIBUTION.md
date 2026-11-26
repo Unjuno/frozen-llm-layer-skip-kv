@@ -99,6 +99,15 @@
 
 **検証設計：** まず固定経路を開発データで選び、同一の実行層数と独立評価で比較する。初段AttentionとEmbeddingの情報差を測る補助診断は、[probe_early_activation.py](../experiments/qwen3/probe_early_activation.py)に実装する。これは候補3マスクの1-step教師強制NLLの線形読み出しであり、本研究の26-bitオンポリシー生成学習の置換・学習成果の証明ではない。コード・データ・図表の外部流用なし。網羅的な新規性調査の完了は主張しない。
 
+## 2.6 固定入力の線形制御器・プロンプト単位経路との比較（2026-11-26）
+
+| ID | 確認した一次資料 | 本研究の反証・比較に使う点 |
+|---|---|---|
+| **RW-22** | Glavas et al., [Dynamic layer selection in decoder-only transformers](https://arxiv.org/abs/2410.20022), 2024, [§3.2 / Appendix A.4.3](https://arxiv.org/html/2410.20022v1) | OPT-1.3Bにおけるトークン別の線形層選択器では、隠れ状態入力が定数入力に有意に勝らなかったと報告。初段Attentionの共有活性を使う一括マスクの情報価値は、入力非依存の強い対照で反証可能にする必要がある。 |
+| **RW-23** | Jain et al., [FiRST: Finetuning Router-Selective Transformers for Input-Adaptive Latency Reduction](https://aclanthology.org/2025.findings-emnlp.1197/), Findings EMNLP 2025, DOI:10.18653/v1/2025.findings-emnlp.1197 | Prefillのプロンプトに応じてDecodeの層を決める経路制御。入力適応そのものは新規性にできない。トークン別全層一括マスクの価値は、プロンプト単位の経路制御に対しても検証する。 |
+
+いずれも本研究の同等手法・同等性能を証明するものではない。論文の存在と上記主張を一次資料で確認したが、網羅的調査は未完了。第1Attention活性の情報量については、固定マスク集合を増やし、独立した学習・調整・評価データを使う補助診断 [probe_early_activation_v2.py](../experiments/qwen3/probe_early_activation_v2.py) で調べる。新規性を証明したとは扱わない。
+
 ## 3. 概念ごとの「どこから・何を」
 
 | 本研究の要素 | 参照元 | 本研究で独自性として**主張しないこと** | 未確定の差分候補 |
