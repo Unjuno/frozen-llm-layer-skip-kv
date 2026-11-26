@@ -73,6 +73,9 @@ python scripts/run_pilot.py --stage pilot --device cuda
 
 ## 現在の状態
 
+- **2026-11-26 初段Attentionの新規性Pilot：** 実Qwen3のHeadを3回更新したが、未学習2問で全ON、Nativeを含め全方式0/2。別の25層固定予算診断（学習6問・比較4問）でもAttention線形予測は学習側最良固定を上回らず。**動的選択の優位性は未実証**。[結果・先行研究・次の合否条件](docs/14_EARLY_ACTIVATION_PILOT.md)。
+
+
 - **一括実行の起動確認：** `python scripts/run_pilot.py --stage smoke --device cpu` の全4工程が終了コード0（[実行manifest](results/qwen3_one_command_smoke_2026-11-25.json)）。CPU環境の実測依存バージョンは[制約ファイル](requirements/cpu-tested.txt)。GPU環境は別途構築する。
 
 
