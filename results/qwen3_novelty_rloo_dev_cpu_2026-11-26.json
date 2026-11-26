@@ -1,0 +1,105 @@
+{
+  "source_commit": "fe4775897323b332806d768266a0b09a84021574",
+  "origin": "Actual saved JSON from connected CPU host",
+  "command": "evaluate.py --model Qwen/Qwen3-0.6B --revision c1899de289a04d12100db370d81485cdf75e47ca --device cpu --dtype float32 --tap post_residual --checkpoint trained in prior pilot --dataset first 2 rows of data/pilot/dev_multistep.jsonl --max-new-tokens 8 --seed 20261126",
+  "result": {
+    "status": "DEV_SMOKE_NOT_SCIENTIFIC_BENCHMARK",
+    "model": "Qwen/Qwen3-0.6B",
+    "revision": "c1899de289a04d12100db370d81485cdf75e47ca",
+    "tap": "post_residual",
+    "device": "cpu",
+    "dtype": "torch.float32",
+    "examples": 2,
+    "modes": {
+      "native": {
+        "exact_accuracy": 0,
+        "median_decode_wall_s": 5.587976895039901,
+        "mean_active_middle": 1
+      },
+      "every_other": {
+        "exact_accuracy": 0,
+        "median_decode_wall_s": 4.183342379750684,
+        "mean_active_middle": 0.5
+      },
+      "every_fourth": {
+        "exact_accuracy": 0,
+        "median_decode_wall_s": 3.7257631737738848,
+        "mean_active_middle": 0.2692307692307692
+      },
+      "learned": {
+        "exact_accuracy": 0,
+        "median_decode_wall_s": 5.540330918272957,
+        "mean_active_middle": 1
+      }
+    },
+    "per_example": [
+      {
+        "prompt": "Return exactly three integer answers separated by single spaces, in this order: 12 + 4; 23 - 5; 7 + 14. No explanation.",
+        "expected": "16 18 21",
+        "modes": {
+          "native": {
+            "generated": "12 + 4  \n23",
+            "exact": 0,
+            "decode_wall_s": 5.564824115950614,
+            "mean_active_middle": 1
+          },
+          "every_other": {
+            "generated": "120: 122",
+            "exact": 0,
+            "decode_wall_s": 3.935085726901889,
+            "mean_active_middle": 0.5
+          },
+          "every_fourth": {
+            "generated": "128说的是122 altogether",
+            "exact": 0,
+            "decode_wall_s": 3.68841075245291,
+            "mean_active_middle": 0.2692307692307692
+          },
+          "learned": {
+            "generated": "12 + 4  \n23",
+            "exact": 0,
+            "decode_wall_s": 6.021333160344511,
+            "mean_active_middle": 1
+          }
+        }
+      },
+      {
+        "prompt": "Return exactly three integer answers separated by single spaces, in this order: 18 - 9; 5 + 14; 22 - 8. No explanation.",
+        "expected": "9 19 14",
+        "modes": {
+          "native": {
+            "generated": "18 9 5 1",
+            "exact": 0,
+            "decode_wall_s": 5.611129674129188,
+            "mean_active_middle": 1
+          },
+          "every_other": {
+            "generated": "15.theses:\n\nactly three",
+            "exact": 0,
+            "decode_wall_s": 4.431599032599479,
+            "mean_active_middle": 0.5
+          },
+          "every_fourth": {
+            "generated": "188uplicated<style (",
+            "exact": 0,
+            "decode_wall_s": 3.7631155950948596,
+            "mean_active_middle": 0.2692307692307692
+          },
+          "learned": {
+            "generated": "18 9 5 1",
+            "exact": 0,
+            "decode_wall_s": 5.059328676201403,
+            "mean_active_middle": 1
+          }
+        }
+      }
+    ],
+    "limitations": [
+      "Tiny arithmetic dev set; no held-out publication benchmark",
+      "every_other/every_fourth are not the best fixed masks",
+      "Python reference dispatcher; batch=1 and eager cache only",
+      "Decode wall time includes CPU synchronization and varies by answer length",
+      "No statistical power or quality noninferiority conclusion"
+    ]
+  }
+}
