@@ -73,6 +73,9 @@ python scripts/run_pilot.py --stage pilot --device cuda
 
 ## 現在の状態
 
+- **同一プロンプト内Pilot（24問×6位置）：** 事後OracleのKLはプロンプト固定0.05935→トークン別0.03572。全12評価プロンプトで事後最良マスクが変化。一方、初段Attention線形はEmbedding線形と全72位置で同じ選択、プロンプト単位線形より悪く、主要合否条件未達。**トークン別選択の改善余地は確認、初段活性の追加利益は未実証**。[Pilot Dの結果](docs/14_EARLY_ACTIVATION_PILOT.md)／[全144位置の実測](results/qwen3_within_prompt_cpu_2026-11-26.json)。
+
+
 - **再検証（60問、12候補）：** 条件付きNLLは固定1.0075→初段Attention 0.9283だが、95%対応付き区間はゼロを含み、正解数14→13。選択は問題種別だけで説明でき、Native成立性も未達（12/24）。動的優位は未実証。[Pilot C](docs/14_EARLY_ACTIVATION_PILOT.md#pilot-c-60問12固定候補独立調整による再検証)／[全実測](results/qwen3_early_activation_v2_cpu_2026-11-26.json)。
 
 
