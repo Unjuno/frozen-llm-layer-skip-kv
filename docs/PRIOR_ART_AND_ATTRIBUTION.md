@@ -86,6 +86,19 @@
 
 **出典上の注意：** この公表はプレプリントであり、著者の主張と学界による独立検証の完了を区別する。LeanのScopeは平方指数の形式化と、各有限行列サイズに対する具体的な下界の**未形式化**を明示する。この理論から本研究のGPU上のK/V射影速度を保証しない。[13 Experiment Runbook](13_EXPERIMENT_RUNBOOK.md)で、`M×d`と`d×2d_KV`の実際の長方形GEMMを別に計測する。
 
+## 2.5 初段活性による経路選択の新規性と反証（2026-11-26）
+
+| ID | 一次資料 | 本研究で使う点・違い | 状態 |
+|---|---|---|---|
+| **RW-18** | Luo, Wang, Yan, [DiffSkip: Differential Layer Skipping in Large Language Models](https://aclanthology.org/2025.findings-acl.377/), Findings ACL 2025, DOI:10.18653/v1/2025.findings-acl.377 | 同一層のAttention変化量をFFNの実行判断に使う既存手法。Attention由来のRouting信号一般を新規とは主張しない。本研究は第1Attentionの既存活性で全中間Blockを一括選択 | 比較・反証候補 |
+| **RW-19** | Li, Li, Zhou, [Skip a Layer or Loop It? Learning Program-of-Layers in LLMs](https://proceedings.mlr.press/v306/li26cq.html), ICML 2026, [arXiv:2606.06574](https://arxiv.org/abs/2606.06574) | 凍結モデルの入力別プログラム選択・品質改善は既知。オフラインMCTSと予測器を用いる点に対し、本研究は既存Attention活性と一つのLinear Head、トークン単位の生成報酬学習を対象 | 比較候補 |
+| **RW-20** | Westerhoff et al., [Programs-of-Layers in LLMs through the Lens of Cortical Areas](https://arxiv.org/abs/2609.31360), arXiv:2609.31360 (2026) | 追試ではPoLarの単一経路Routerの利益を再現できず、少数の汎用経路でも多くの問題を解けると報告。固定Maskを弱い恣意的Baselineにしない理由 | 独立追試の反証材料 |
+| **RW-21** | Lin, Wan, Wang, [Do Dynamic Routers Need Memory? HeRo: History-Aware Routing for Efficient LLM Inference](https://arxiv.org/abs/2609.08189), arXiv:2609.08189 (2026) | 層をまたぐRouter履歴を扱うFFN制御。第1Attentionだけで後続層の状態依存性を近似できるかは未証明 | 比較・限界の参考 |
+
+**RW-04の追加確認：** Dr.LLMのTable 6ではLLaMA 3.2-3Bで各層直前の特徴がARC 74.5%、DART 38.6%、入力Embeddingを全層Routerへ与える方式が70.9%、30.0%、元モデルが73.5%、35.2%。これは**Embedding**との比較であり、第1Attention残差後の活性の実験ではない。従って初段Attentionの共有活性が十分かを独立に試す価値がある。
+
+**検証設計：** まず固定経路を開発データで選び、同一の実行層数と独立評価で比較する。初段AttentionとEmbeddingの情報差を測る補助診断は、[probe_early_activation.py](../experiments/qwen3/probe_early_activation.py)に実装する。これは候補3マスクの1-step教師強制NLLの線形読み出しであり、本研究の26-bitオンポリシー生成学習の置換・学習成果の証明ではない。コード・データ・図表の外部流用なし。網羅的な新規性調査の完了は主張しない。
+
 ## 3. 概念ごとの「どこから・何を」
 
 | 本研究の要素 | 参照元 | 本研究で独自性として**主張しないこと** | 未確定の差分候補 |
