@@ -1,6 +1,6 @@
 # Frozen LLM Layer Skipping × Deferred KV Reconstruction
 
-> **状態：実験起動可能。小型Qwen3 CPU統合テスト13件PASS、事前学習済みQwen3-0.6BのFP32 CPU初回数値検証PASS（6マスク列・2 Decode位置）。** [小型実測](results/qwen3_synthetic_cpu_2026-11-25.json)／[実モデル実測](results/qwen3_real_cpu_fp32_2026-11-25.json)。実モデルのHead学習・GPU速度・品質は未検証。期限なし。
+> **状態：実験起動可能。小型Qwen3 CPU統合テスト13件PASS、事前学習済みQwen3-0.6BのFP32 CPU初回数値検証PASS（6マスク列・2 Decode位置）。** [小型実測](results/qwen3_synthetic_cpu_2026-11-25.json)／[実モデル実測](results/qwen3_real_cpu_fp32_2026-11-25.json)。実モデルのHead学習Pilotは実施済みだが品質改善・GPU速度は未検証。期限なし。
 
 ## 何を研究するか
 
@@ -73,6 +73,9 @@ python scripts/run_pilot.py --stage pilot --device cuda
 
 ## 現在の状態
 
+- **再検証（60問、12候補）：** 条件付きNLLは固定1.0075→初段Attention 0.9283だが、95%対応付き区間はゼロを含み、正解数14→13。選択は問題種別だけで説明でき、Native成立性も未達（12/24）。動的優位は未実証。[Pilot C](docs/14_EARLY_ACTIVATION_PILOT.md#pilot-c-60問12固定候補独立調整による再検証)／[全実測](results/qwen3_early_activation_v2_cpu_2026-11-26.json)。
+
+
 - **2026-11-26 初段Attentionの新規性Pilot：** 実Qwen3のHeadを3回更新したが、未学習2問で全ON、Nativeを含め全方式0/2。別の25層固定予算診断（学習6問・比較4問）でもAttention線形予測は学習側最良固定を上回らず。**動的選択の優位性は未実証**。[結果・先行研究・次の合否条件](docs/14_EARLY_ACTIVATION_PILOT.md)。
 
 
@@ -83,7 +86,7 @@ python scripts/run_pilot.py --stage pilot --device cuda
 - **数学的な仮説：** 未確定と明示して分離。
 - **CPUの合成モデル参照実験：** [初回正確性結果](docs/12_CPU_CORRECTNESS_PILOT.md)を取得済み。**Qwen3実モデルの結果ではない**。29種類のマスクでEager/LazyのLogits差0、位置誤りの負の対照も検出。
 - **実Qwen3-0.6B初回検証：** CPU FP32、1プロンプト、2 Decode位置、6固定マスク列で全ONとNativeの差0、Eager/Lazyの最大Logits差0（[測定結果](results/qwen3_real_cpu_fp32_2026-11-25.json)）。
-- **Qwen3/Nanbeigeの実モデル学習・GPU測定：未実施**。実測した高速化・品質改善・学術的新規性は主張しない。
+- **Qwen3のHead学習は初回Pilot済み、Nanbeige学習とGPU測定は未実施**。実測した高速化・品質改善・学術的新規性は主張しない。
 - **活性を読み取る厳密なTensor位置：** Attention出力射影の前後、残差加算の前後などを混同しない。[11](docs/11_SHARED_ACTIVATION_ROUTING.md)で**未決**として管理する。
 
 [MIT License](LICENSE)はこのリポジトリ独自の資料に適用する。モデル重みや外部資産のライセンスは別である。
